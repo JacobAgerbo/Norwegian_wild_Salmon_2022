@@ -14,17 +14,17 @@ Therefore i have made a small bullet list with the overall stuff we have done, b
 
 • Read recruitment of MAGs were used for following classical ecological measurements for diversity, like:
 
-  - Richness, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
+  - **Bacterial richness**, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
 
-  - Composition, PCoA with weigthed UniFrac distances
+  - **Bacterial composition**, PCoA with weigthed UniFrac distances
 
-  - Differential abundance between locations, presence/absence of parasites
+  - **Differential abundance betweem bacteria** across locations, presence/absence of parasites
 
-  - Correlated response models between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
+  - **Correlated response models** between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
 
 • Also, we analysed functional diversity from gene abundances, where functions were annotated using COG, KoFAM and PFAM.
 
-  - Looking at overall composition with PCoA or heatmap
+  - Looking at overall functional composition with PCoA or heatmap
 
   - Looking at composition within single COG CATEGORIES
 
