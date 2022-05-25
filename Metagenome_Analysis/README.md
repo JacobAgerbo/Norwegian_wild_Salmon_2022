@@ -7,8 +7,11 @@ these datasets are just huge and there is always another thing to be analysed ar
 Therefore i have made a small bullet list with the overall stuff we have done, but please reach out if you have any questions.
 
 • We started by making rarefaction-curves to evaluate the sequencing depth
+
 • We estimated the bacterial comprehensiveness of our metagenome, using SCGs for bacteria, protista, and archaea
+
 • Prior our analysis of MAGs, we normalised coverage of MAGs based on sum of coverage (sequencing depth) and genome length, basically like [TMP normalisation](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/)
+
 • Read recruitment of MAGs were used for following classical ecological measurements for diversity, like:
     - Richness, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
     - Composition, PCoA with weigthed UniFrac.
