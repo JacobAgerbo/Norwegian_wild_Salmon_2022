@@ -1,0 +1,613 @@
+---
+title: "MGmapper_stats"
+author: "Jacob Agerbo Rasmussen"
+date: "11/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RColorBrewer)
+library(readxl)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(stringr)
+library(wesanderson)
+library(cowplot)
+library(XLConnect)
+library(scatterpie)
+library(moonBook)
+library(webr)
+```
+
+## R Markdown
+
+```{r load excel files}
+path = "XLSX"
+my_files <- list.files(path,pattern = "*.xlsx", full.names = TRUE)
+
+df.list = lapply(my_files, function(i){
+  x = read_excel(i, sheet = "abundance.databases")
+  x = x[,c(2,3,4)]
+  x$file = i
+  x
+})
+
+do <- as.data.frame(do.call(rbind, lapply(df.list, as.vector)))
+df <- cbind(my.var=rownames(do), do)
+df[df == "NULL"] <- NA
+
+```
+
+```{r PieDonutCustom function, include=FALSE, echo= FALSE, warning=FALSE}
+PieDonutCustom <- function (data, mapping, start = getOption("PieDonut.start",
+                                           0), addPieLabel = TRUE, addDonutLabel = TRUE, showRatioDonut = TRUE,
+          showRatioPie = TRUE, ratioByGroup = TRUE, showRatioThreshold = getOption("PieDonut.showRatioThreshold",
+                                                                                   0.02), labelposition = getOption("PieDonut.labelposition",
+                                                                                                                    2), labelpositionThreshold = 0.1, r0 = getOption("PieDonut.r0",
+                                                                                                                                                                     0.3), r1 = getOption("PieDonut.r1", 1), r2 = getOption("PieDonut.r2",
+                                                                                                                                                                                                                            1.2), explode = NULL, selected = NULL, explodePos = 0.1,
+          color = "white", pieAlpha = 0.8, donutAlpha = 1, maxx = NULL,
+          showPieName = TRUE, showDonutName = FALSE, title = NULL,
+          pieLabelSize = 4, donutLabelSize = 3, titlesize = 5, explodePie = TRUE,
+          explodeDonut = FALSE, use.label = TRUE, use.labels = TRUE,
+          family = getOption("PieDonut.family", ""), palette_name="Dark2")
+{
+  (cols = colnames(data))
+  if (use.labels)
+    data = moonBook::addLabelDf(data, mapping)
+  count <- NULL
+  if ("count" %in% names(mapping))
+    count <- moonBook::getMapping(mapping, "count")
+  count
+  pies <- donuts <- NULL
+  (pies = moonBook::getMapping(mapping, "pies"))
+  if (is.null(pies))
+    (pies = moonBook::getMapping(mapping, "pie"))
+  if (is.null(pies))
+    (pies = moonBook::getMapping(mapping, "x"))
+  (donuts = moonBook::getMapping(mapping, "donuts"))
+  if (is.null(donuts))
+    (donuts = moonBook::getMapping(mapping, "donut"))
+  if (is.null(donuts))
+    (donuts = moonBook::getMapping(mapping, "y"))
+  if (!is.null(count)) {
+    df <- data %>% group_by(.data[[pies]]) %>% dplyr::summarize(Freq = sum(.data[[count]]))
+    df
+  }
+  else {
+    df = data.frame(table(data[[pies]]))
+  }
+  colnames(df)[1] = pies
+  df$end = cumsum(df$Freq)
+  df$start = dplyr::lag(df$end)
+  df$start[1] = 0
+  total = sum(df$Freq)
+  df$start1 = df$start * 2 * pi/total
+  df$end1 = df$end * 2 * pi/total
+  df$start1 = df$start1 + start
+  df$end1 = df$end1 + start
+  df$focus = 0
+  if (explodePie)
+    df$focus[explode] = explodePos
+  df$mid = (df$start1 + df$end1)/2
+  df$x = ifelse(df$focus == 0, 0, df$focus * sin(df$mid))
+  df$y = ifelse(df$focus == 0, 0, df$focus * cos(df$mid))
+  df$label = df[[pies]]
+  df$ratio = df$Freq/sum(df$Freq)
+  if (showRatioPie) {
+    df$label = ifelse(df$ratio >= showRatioThreshold, paste0(df$label,
+                                                             "\n(", scales::percent(df$ratio), ")"),
+                      as.character(df$label))
+  }
+  df$labelx = (r0 + r1)/2 * sin(df$mid) + df$x
+  df$labely = (r0 + r1)/2 * cos(df$mid) + df$y
+  if (!is.factor(df[[pies]]))
+    df[[pies]] <- factor(df[[pies]])
+  df
+  mainCol = RColorBrewer::brewer.pal(nrow(df), name=palette_name)
+  df$radius = r1
+  df$radius[df$focus != 0] = df$radius[df$focus != 0] + df$focus[df$focus !=
+                                                                   0]
+  df$hjust = ifelse((df$mid%%(2 * pi)) > pi, 1, 0)
+  df$vjust = ifelse(((df$mid%%(2 * pi)) < (pi/2)) | (df$mid%%(2 *
+                                                                pi) > (pi * 3/2)), 0, 1)
+  df$segx = df$radius * sin(df$mid)
+  df$segy = df$radius * cos(df$mid)
+  df$segxend = (df$radius + 0.05) * sin(df$mid)
+  df$segyend = (df$radius + 0.05) * cos(df$mid)
+  df
+  if (!is.null(donuts)) {
+    subColor = makeSubColor(mainCol, no = length(unique(data[[donuts]])))
+    subColor
+    data
+    if (!is.null(count)) {
+      df3 <- as.data.frame(data[c(donuts, pies, count)])
+      colnames(df3) = c("donut", "pie", "Freq")
+      df3
+      df3 <- eval(parse(text = "complete(df3,donut,pie)"))
+      df3$Freq[is.na(df3$Freq)] = 0
+      if (!is.factor(df3[[1]]))
+        df3[[1]] = factor(df3[[1]])
+      if (!is.factor(df3[[2]]))
+        df3[[2]] = factor(df3[[2]])
+      df3 <- df3 %>% arrange(.data$pie, .data$donut)
+      a <- df3 %>% spread(.data$pie, value = .data$Freq)
+      a = as.data.frame(a)
+      a
+      rownames(a) = a[[1]]
+      a = a[-1]
+      a
+      colnames(df3)[1:2] = c(donuts, pies)
+    }
+    else {
+      df3 = data.frame(table(data[[donuts]], data[[pies]]),
+                       stringsAsFactors = FALSE)
+      colnames(df3)[1:2] = c(donuts, pies)
+      a = table(data[[donuts]], data[[pies]])
+      a
+    }
+    a
+    df3
+    df3$group = rep(colSums(a), each = nrow(a))
+    df3$pie = rep(1:ncol(a), each = nrow(a))
+    total = sum(df3$Freq)
+    total
+    df3$ratio1 = df3$Freq/total
+    df3
+    if (ratioByGroup) {
+      df3$ratio = scales::percent(df3$Freq/df3$group)
+    }
+    else {
+      df3$ratio <- scales::percent(df3$ratio1)
+    }
+    df3$end = cumsum(df3$Freq)
+    df3
+    df3$start = dplyr::lag(df3$end)
+    df3$start[1] = 0
+    df3$start1 = df3$start * 2 * pi/total
+    df3$end1 = df3$end * 2 * pi/total
+    df3$start1 = df3$start1 + start
+    df3$end1 = df3$end1 + start
+    df3$mid = (df3$start1 + df3$end1)/2
+    df3$focus = 0
+    if (!is.null(selected)) {
+      df3$focus[selected] = explodePos
+    }
+    else if (!is.null(explode)) {
+      selected = c()
+      for (i in 1:length(explode)) {
+        start = 1 + nrow(a) * (explode[i] - 1)
+        selected = c(selected, start:(start + nrow(a) -
+                                        1))
+      }
+      selected
+      df3$focus[selected] = explodePos
+    }
+    df3
+    df3$x = 0
+    df3$y = 0
+    df
+    if (!is.null(explode)) {
+      explode
+      for (i in 1:length(explode)) {
+        xpos = df$focus[explode[i]] * sin(df$mid[explode[i]])
+        ypos = df$focus[explode[i]] * cos(df$mid[explode[i]])
+        df3$x[df3$pie == explode[i]] = xpos
+        df3$y[df3$pie == explode[i]] = ypos
+      }
+    }
+    df3$no = 1:nrow(df3)
+    df3$label = df3[[donuts]]
+    if (showRatioDonut) {
+      if (max(nchar(levels(df3$label))) <= 2)
+        df3$label = paste0(df3$label, "(", df3$ratio,
+                           ")")
+      else df3$label = paste0(df3$label, "\n(", df3$ratio,
+                              ")")
+    }
+    df3$label[df3$ratio1 == 0] = ""
+    df3$label[df3$ratio1 < showRatioThreshold] = ""
+    df3$hjust = ifelse((df3$mid%%(2 * pi)) > pi, 1, 0)
+    df3$vjust = ifelse(((df3$mid%%(2 * pi)) < (pi/2)) | (df3$mid%%(2 *
+                                                                     pi) > (pi * 3/2)), 0, 1)
+    df3$no = factor(df3$no)
+    df3
+    labelposition
+    if (labelposition > 0) {
+      df3$radius = r2
+      if (explodeDonut)
+        df3$radius[df3$focus != 0] = df3$radius[df3$focus !=
+                                                  0] + df3$focus[df3$focus != 0]
+      df3$segx = df3$radius * sin(df3$mid) + df3$x
+      df3$segy = df3$radius * cos(df3$mid) + df3$y
+      df3$segxend = (df3$radius + 0.05) * sin(df3$mid) +
+        df3$x
+      df3$segyend = (df3$radius + 0.05) * cos(df3$mid) +
+        df3$y
+      if (labelposition == 2)
+        df3$radius = (r1 + r2)/2
+      df3$labelx = (df3$radius) * sin(df3$mid) + df3$x
+      df3$labely = (df3$radius) * cos(df3$mid) + df3$y
+    }
+    else {
+      df3$radius = (r1 + r2)/2
+      if (explodeDonut)
+        df3$radius[df3$focus != 0] = df3$radius[df3$focus !=
+                                                  0] + df3$focus[df3$focus != 0]
+      df3$labelx = df3$radius * sin(df3$mid) + df3$x
+      df3$labely = df3$radius * cos(df3$mid) + df3$y
+    }
+    df3$segx[df3$ratio1 == 0] = 0
+    df3$segxend[df3$ratio1 == 0] = 0
+    df3$segy[df3$ratio1 == 0] = 0
+    df3$segyend[df3$ratio1 == 0] = 0
+    if (labelposition == 0) {
+      df3$segx[df3$ratio1 < showRatioThreshold] = 0
+      df3$segxend[df3$ratio1 < showRatioThreshold] = 0
+      df3$segy[df3$ratio1 < showRatioThreshold] = 0
+      df3$segyend[df3$ratio1 < showRatioThreshold] = 0
+    }
+    df3
+    del = which(df3$Freq == 0)
+    del
+    if (length(del) > 0)
+      subColor <- subColor[-del]
+    subColor
+  }
+  p <- ggplot() + ggforce::theme_no_axes() + coord_fixed()
+  if (is.null(maxx)) {
+    r3 = r2 + 0.3
+  }
+  else {
+    r3 = maxx
+  }
+  p1 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x", y0 = "y",
+                                    r0 = as.character(r0), r = as.character(r1), start = "start1",
+                                    end = "end1", fill = pies), alpha = pieAlpha, color = color,
+                         data = df) + transparent() + scale_fill_manual(values = mainCol) +
+    xlim(r3 * c(-1, 1)) + ylim(r3 * c(-1, 1)) + guides(fill = FALSE)
+  if ((labelposition == 1) & (is.null(donuts))) {
+    p1 <- p1 + geom_segment(aes_string(x = "segx",
+                                       y = "segy", xend = "segxend", yend = "segyend"),
+                            data = df) + geom_text(aes_string(x = "segxend",
+                                                              y = "segyend", label = "label", hjust = "hjust",
+                                                              vjust = "vjust"), size = pieLabelSize, data = df,
+                                                   family = family)
+  }
+  else if ((labelposition == 2) & (is.null(donuts))) {
+    p1 <- p1 + geom_segment(aes_string(x = "segx",
+                                       y = "segy", xend = "segxend", yend = "segyend"),
+                            data = df[df$ratio < labelpositionThreshold, ]) +
+      geom_text(aes_string(x = "segxend", y = "segyend",
+                           label = "label", hjust = "hjust",
+                           vjust = "vjust"), size = pieLabelSize,
+                data = df[df$ratio < labelpositionThreshold,
+                ], family = family) + geom_text(aes_string(x = "labelx",
+                                                           y = "labely", label = "label"), size = pieLabelSize,
+                                                data = df[df$ratio >= labelpositionThreshold, ],
+                                                family = family)
+  }
+  else {
+    p1 <- p1 + geom_text(aes_string(x = "labelx", y = "labely",
+                                    label = "label"), size = pieLabelSize, data = df,
+                         family = family)
+  }
+  if (showPieName)
+    p1 <- p1 + annotate("text", x = 0, y = 0, label = pies,
+                        size = titlesize, family = family)
+  p1 <- p1 + theme(text = element_text(family = family))
+  if (!is.null(donuts)) {
+    if (explodeDonut) {
+      p3 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x",
+                                        y0 = "y", r0 = as.character(r1), r = as.character(r2),
+                                        start = "start1", end = "end1", fill = "no",
+                                        explode = "focus"), alpha = donutAlpha,
+                             color = color, data = df3)
+    }
+    else {
+      p3 <- p + ggforce::geom_arc_bar(aes_string(x0 = "x",
+                                        y0 = "y", r0 = as.character(r1), r = as.character(r2),
+                                        start = "start1", end = "end1", fill = "no"),
+                             alpha = donutAlpha, color = color, data = df3)
+    }
+    p3 <- p3 + transparent() + scale_fill_manual(values = subColor) +
+      xlim(r3 * c(-1, 1)) + ylim(r3 * c(-1, 1)) + guides(fill = FALSE)
+    p3
+    if (labelposition == 1) {
+      p3 <- p3 + geom_segment(aes_string(x = "segx",
+                                         y = "segy", xend = "segxend", yend = "segyend"),
+                              data = df3) + geom_text(aes_string(x = "segxend",
+                                                                 y = "segyend", label = "label", hjust = "hjust",
+                                                                 vjust = "vjust"), size = donutLabelSize,
+                                                      data = df3, family = family)
+    }
+    else if (labelposition == 0) {
+      p3 <- p3 + geom_text(aes_string(x = "labelx",
+                                      y = "labely", label = "label"), size = donutLabelSize,
+                           data = df3, family = family)
+    }
+    else {
+      p3 <- p3 + geom_segment(aes_string(x = "segx",
+                                         y = "segy", xend = "segxend", yend = "segyend"),
+                              data = df3[df3$ratio1 < labelpositionThreshold,
+                              ]) + geom_text(aes_string(x = "segxend",
+                                                        y = "segyend", label = "label", hjust = "hjust",
+                                                        vjust = "vjust"), size = donutLabelSize,
+                                             data = df3[df3$ratio1 < labelpositionThreshold,
+                                             ], family = family) + geom_text(aes_string(x = "labelx",
+                                                                                        y = "labely", label = "label"), size = donutLabelSize,
+                                                                             data = df3[df3$ratio1 >= labelpositionThreshold,
+                                                                             ], family = family)
+    }
+    if (!is.null(title))
+      p3 <- p3 + annotate("text", x = 0, y = r3,
+                          label = title, size = titlesize, family = family)
+    else if (showDonutName)
+      p3 <- p3 + annotate("text", x = (-1) * r3,
+                          y = r3, label = donuts, hjust = 0, size = titlesize,
+                          family = family)
+    p3 <- p3 + theme(text = element_text(family = family))
+    grid::grid.newpage()
+    print(p1, vp = grid::viewport(height = 1, width = 1))
+    print(p3, vp = grid::viewport(height = 1, width = 1))
+  }
+  else {
+    p1
+  }
+}
+```
+
+```{r database plots}
+# Basic box plot per database, except for raw and unmapped
+df$database <- factor(df$database, levels=c("notPhiX","Unmapped","Human","Vertebrates_mammals","Vertebrates_other", "Invertebrates", "Fungi"))
+df.database <- df[df$database != "notPhiX",]
+df.database <- df.database[df.database$database != "Unmapped",]
+df.database <- df.database[df.database$database != "Vertebrates_other",]
+#
+df.Vertebrate <- df[df$database == "Vertebrates_other",]
+#
+p1 <- ggplot(df.Vertebrate, aes(x=database, y=Percentage)) +
+  geom_boxplot(width=0.8) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, hjust=1)) + xlab("")
+
+p2 <- ggplot(df.database, aes(x=database, y=Percentage)) +
+  geom_boxplot(width=0.8) + theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, hjust=1)) + xlab("") + ylab("")
+```
+
+```{r make dependencies for summary plot}
+df.read <- df[df$database == "notPhiX" | df$database == "Unmapped",]
+#
+mean.databases = df %>%
+  group_by(database) %>%
+  summarize(Mean = mean(`Number of reads mapped`, na.rm=TRUE),
+            Q75 = quantile(`Number of reads mapped`, na.rm=TRUE,  probs = 0.75),
+            Q25 = quantile(`Number of reads mapped`, na.rm=TRUE,  probs = 0.25),
+            SD = sd(`Number of reads mapped`, na.rm=TRUE))
+
+
+#
+Unmapped.q75 = mean.databases$Q75[mean.databases$database == "Unmapped"]
+Unmapped.mean = mean.databases$Mean[mean.databases$database == "Unmapped"]
+Unmapped.q25 = mean.databases$Q25[mean.databases$database == "Unmapped"]
+#
+scientific_10 <- function(x) {
+  parse(text=gsub("e\\+*", " %*% 10^",
+                  scales::scientific_format()(x))) }
+```
+
+```{r Raw vs. unmapped plots, warning=FALSE}
+p3 <- df.read %>%
+  mutate(name = file %>% str_replace(".xlsx", "")) %>%
+  mutate(name = name %>% str_replace("XLSX/", "")) %>%
+  mutate(name = fct_reorder(name, desc(`Number of reads mapped`))) %>%
+  ggplot( aes(x=name, y=`Number of reads mapped`, fill=database)) +
+  geom_bar(stat="identity", position=position_dodge(), alpha = 0.95, width = 0.75 ) +
+  scale_fill_manual(values=wes_palette("Rushmore1")[4:5]) +
+  scale_color_manual(values=wes_palette("Rushmore1")[4:5]) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  geom_hline(yintercept=Unmapped.q75, linetype="dotdash", color = "darkgrey") +
+  geom_hline(yintercept=Unmapped.mean, linetype="dashed", color = "black") +
+  geom_hline(yintercept=Unmapped.q25, linetype="dotdash", color = "darkgrey") +
+  scale_y_continuous(label=scientific_10) +
+  xlab("")
+```
+
+```{r plot output in grid stats, warning=FALSE}
+plot1 <- plot_grid(p1, p2, nrow = 1, rel_widths = c(1, 3))
+plot1 <- plot_grid(plot1,p3, ncol = 1, labels = "AUTO")
+#pdf("MGmapper_stats.pdf")
+ggdraw(plot1)
+#dev.off()
+```
+
+# Make pie chart with invertebrate and verebrate gut content from MGmapper per individual
+# Hopefully plot in to map :)
+```{r get vertebrate data for pie chart Vertebrates, echo=FALSE, warning=FALSE}
+path = "Vertebrates"
+my_files <- list.files(path,pattern = "*.xlsx", full.names = TRUE)
+
+# Check for existence of a worksheet called 'mtcars'
+
+df.list = lapply(my_files, function(i){
+  x = read_excel(i, sheet = "positive.species.Vertebrates_ot")
+  x = x[,c("Reads","Class","Species")]
+  x$file = i
+  x
+})
+
+do <- as.data.frame(do.call(rbind, lapply(df.list, as.vector)))
+df <- cbind(my.var=rownames(do), do)
+df[df == "NULL"] <- NA
+df <- df %>%
+  mutate(name = file %>% str_replace(".xlsx", "")) %>%
+  mutate(name = name %>% str_replace("Vertebrates/", "")) %>%
+  mutate(name = name %>% str_replace("_all", "")) %>%
+  mutate(name = name %>% str_replace("D", "")) %>%
+  mutate(name = name %>% str_replace("MG", ""))
+
+sample.info <- read_excel("metadata.xlsx")
+sample.info <- sample.info[match(df$name,sample.info$`Lab Number (new)`),]
+df <- cbind(df, sample.info)
+```
+
+```{r make pie chart in grid Vertebrates, warning=FALSE}
+# Compute the position of labels
+pie.data <- df %>%
+  group_by(name) %>%
+  arrange(desc(Species)) %>%
+  mutate(prop = Reads / sum(Reads) * 100) %>%
+  mutate(ypos = cumsum(prop) - 0.5*prop ) %>%
+  mutate(Location = Location)
+
+# Basic piechart
+pie.chart <-  ggplot(pie.data, aes(x="", y=prop, fill=Class)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void() +
+  theme(legend.position="none") +
+  geom_text(aes(y = ypos, label = ifelse(prop > 20,Species,"")), color = "black", size=2) +
+  scale_fill_brewer(palette="Set1") +
+  facet_wrap(~Location+name)
+
+pie.legend <-  ggplot(pie.data, aes(x="", y=prop, fill=Class)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_brewer(palette="Set1") +
+  theme_void()
+pie.legend <- cowplot::get_legend(pie.legend)
+```  
+
+```{r plot pie in grid Vertebrates, warning=FALSE}
+#pdf("pie_chart_Vertebrates.pdf")
+ggdraw(plot_grid(plot_grid(pie.chart),
+                 plot_grid(pie.legend),
+                 rel_widths=c(1, 0.075)))
+#dev.off()
+```
+
+```{r PieDonutCustom Vertebrates, warning=FALSE}
+#pdf("PieDonut_vertebrates.pdf")
+PieDonutCustom(pie.data,aes(pies=Location,donuts=Class),
+         donutLabelSize = 2,
+         showRatioPie =T,
+         title = "Vertebrates in gut content",
+         showPieName = F,
+         palette_name = "Dark2"
+         )
+#dev.off()
+```  
+
+```{r get vertebrate data for pie chart Invertebrates, echo=FALSE, warning=FALSE}
+path = "Invertebrates"
+my_files <- list.files(path,pattern = "*.xlsx", full.names = TRUE)
+
+# Check for existence of a worksheet called 'mtcars'
+
+df.list = lapply(my_files, function(i){
+  x = read_excel(i, sheet = "positive.species.Invertebrates")
+  x = x[,c("Reads","Phylum","Species")]
+  x$file = i
+  x
+})
+
+do <- as.data.frame(do.call(rbind, lapply(df.list, as.vector)))
+df <- cbind(my.var=rownames(do), do)
+df[df == "NULL"] <- NA
+df <- df %>%
+  mutate(name = file %>% str_replace(".xlsx", "")) %>%
+  mutate(name = name %>% str_replace("Invertebrates/", "")) %>%
+  mutate(name = name %>% str_replace("_all", "")) %>%
+  mutate(name = name %>% str_replace("D", "")) %>%
+  mutate(name = name %>% str_replace("MG", ""))
+
+sample.info <- read_excel("metadata.xlsx")
+sample.info <- sample.info[match(df$name,sample.info$`Lab Number (new)`),]
+df <- cbind(df, sample.info)
+```
+
+```{r Make piechart in grid Invertebrates, warning=FALSE}
+# Compute the position of labels
+pie.data <- df %>%
+  group_by(name) %>%
+  arrange(desc(Species)) %>%
+  mutate(prop = Reads / sum(Reads) * 100) %>%
+  mutate(ypos = cumsum(prop) - 0.5*prop ) %>%
+  mutate(Location = Location)
+
+# Basic piechart
+pie.chart <-  ggplot(pie.data, aes(x="", y=prop, fill=Phylum)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  theme_void() +
+  theme(legend.position="none") +
+  geom_text(aes(y = ypos, label = ifelse(prop > 20,Species,"")), color = "black", size=2) +
+  scale_fill_brewer(palette="Set1") +
+  facet_wrap(~Location+name)
+
+pie.legend <-  ggplot(pie.data, aes(x="", y=prop, fill=Phylum)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0) +
+  scale_fill_brewer(palette="Set1") +
+  theme_void()
+pie.legend <- cowplot::get_legend(pie.legend)
+```  
+
+```{r plot pie in grid Invertebrates, warning=FALSE}
+#pdf("pie_chart_Invertebrates.pdf")
+ggdraw(plot_grid(plot_grid(pie.chart),
+                 plot_grid(pie.legend),
+                 rel_widths=c(1, 0.075)))
+#dev.off()
+```  
+
+
+```{r PieDonutCustom Invertebrates, warning=FALSE}
+#pdf("PieDonut_invertebrates.pdf")
+PieDonutCustom(pie.data,aes(pies=Location,donuts=Phylum),
+         donutLabelSize = 2,
+         showRatioPie =T,
+         title = "Invertebrates in gut content",
+         showPieName = F,
+         palette_name = "Dark2"
+         )
+#dev.off()
+```  
+
+
+```{r map with pie charts Invertebrates, warning=FALSE}
+world <- map_data('world')
+map <- ggplot(world, aes(long, lat)) +
+  geom_map(map=world, aes(map_id=region), fill="grey30", color="white") +
+  coord_fixed(xlim=c(4.5, 30.5), ylim=c(56.5, 72)) + theme_map()
+
+map.Invertebrate <- read.csv("Map_Invertebrate_data.csv", encoding = "UTF-8")
+map.Vertebrate <- read.csv("Map_Vertebrate_data.csv", encoding = "UTF-8")
+
+radius.Invertebrate = 0.75
+radius.Vertebrate = 0.75
+
+my_pal1 = brewer.pal(5, "Dark2")
+my_pal2 = brewer.pal(9, "Paired")
+my_pal = c(my_pal1,my_pal2)
+p.Invertebrate = map + geom_scatterpie(aes(x=Long-0.5, y=Lat-.5, group=Location, r=radius.Invertebrate),
+                    data=map.Invertebrate, cols=c("Arthropoda","Chordata",  "Cnidaria","Ctenophora","Echinodermata","Hemichordata", "Mollusca",  "Nematoda",  "Platyhelminthes")) +
+                    theme_map() + scale_fill_manual(values=my_pal2)
+
+p.Vertebrate = map + geom_scatterpie(aes(x=Long+0.75, y=Lat+0.75, group=Location, r=radius.Vertebrate),
+                    data=map.Vertebrate, cols=c("Unknown.Vertebrate","Actinopteri","Amphibia","Aves","Chondrichthyes")) +
+                    theme_map() + scale_fill_manual(values=my_pal1)
+
+p.both = p.Invertebrate + geom_scatterpie(aes(x=Long+0.75, y=Lat+0.75, group=Location, r=radius.Vertebrate),
+                    data=map.Vertebrate, cols=c("Unknown.Vertebrate","Actinopteri","Amphibia","Aves","Chondrichthyes")) +
+                    theme_map() + scale_fill_manual(values=my_pal)
+pdf("Map_Diet_Analysis.pdf")    
+p.Invertebrate
+p.Vertebrate
+p.both
+dev.off()
+```  
