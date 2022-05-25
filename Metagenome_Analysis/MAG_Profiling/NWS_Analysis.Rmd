@@ -1,0 +1,848 @@
+---
+title: "Capercailie_Metagenome_Analysis"
+author: "Jacob Agerbo Rasmussen"
+date: "1/31/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Setting dependencies
+```{r dependencies, echo=FALSE}
+library(readxl);packageVersion("readxl")
+library(tidyverse);packageVersion("tidyverse")
+library(ggplot2);packageVersion("ggplot2")
+library(ggpubr);packageVersion("ggpubr")
+library(ggfortify);packageVersion("ggfortify")
+library(rstatix);packageVersion("rstatix")
+library(phyloseq);packageVersion("phyloseq")
+library(ape);packageVersion("ape")
+library(metacoder);packageVersion("metacoder")
+library(cowplot);packageVersion("cowplot")
+library(boral);packageVersion("boral")
+library(ggboral);packageVersion("ggboral")
+library(hilldiv);packageVersion("hilldiv")
+library(ADImpute);packageVersion("ADImpute")
+library(vegan);packageVersion("vegan")
+library(phylosmith);packageVersion("phylosmith")
+```
+
+Loading MAG data
+```{r load data, echo=FALSE}
+# df
+df <- read_xlsx("MAG_coverage_ALL.xlsx")
+Bin_Sum <- read_xlsx("bins_summary_ALL.xlsx")
+# Tidy up df
+df <- as.matrix(df)
+rownames(df) <- df[,1]
+df <- df[,-c(1)]
+class(df) <- "numeric"
+
+### TMP normalisation
+size <- data.frame(MAG = Bin_Sum$MAG, Length = Bin_Sum$total_length)
+colnames(size) <- c("hgnc_symbol", "transcript_length")
+df.tmp <- NormalizeTPM(df, tr_length = size, scale = 1e+06) # the scale is just a constant, which can be changed, i added a million, so the total sum for each sample i 1.
+colSums(df.tmp) # check Sample sum
+
+# tax
+tax <- read_xlsx("MAG_Tax_ALL.xlsx")
+# Tidy up tax
+tax <- as.matrix(tax)
+rownames(tax) <- rownames(df)
+tax <- tax[,-c(1)]
+# md
+md <- read_xlsx("metadata.xlsx")
+# Tidy up md
+md <- as.matrix(md)
+rownames(md) <- md[,1]
+md <- as.data.frame(md)
+
+## Make physeq object
+physeq.tmp <- phyloseq(otu_table(df.tmp,taxa_are_rows=TRUE),
+               tax_table(tax),
+               sample_data(md))
+
+#
+random_tree = rtree(ntaxa(physeq.tmp), rooted=TRUE, tip.label=taxa_names(physeq.tmp))
+physeq.tmp = merge_phyloseq(physeq.tmp, random_tree)
+```
+
+
+Check saturation of MAGs  per depth for each sample (rarefraction curve)
+```{r Rarefraction curves,echo=FALSE}
+#pdf("Rarefraction.pdf", width = 9, height = 6)
+gene_coverage <- read_xlsx("NWS-GENE-COVERAGES.xlsx")
+gene_coverage <- as.matrix(gene_coverage)
+class(gene_coverage) <- "integer"
+gene_coverage <- gene_coverage[,-c(1)]
+df.rare <- round(df.tmp*100,0) # make the data to rounded percentage
+MAG.raremax <- min(rowSums(t(df.rare)))
+
+gene.raremax <- min(rowSums(t(gene_coverage)))
+
+
+rarecurve(t(df.rare), step = 1, col = "black", cex = 0.6, label = TRUE, xlab = "Normalised MAG Abundance (%)", ylab = "MAGs")
+rarecurve(t(gene_coverage), step = 50000, sample = gene.raremax, col = "black", cex = 0.6, label = TRUE, xlab = "Contig Coverage", ylab = "Gene calls (ORFs)")
+#dev.off()
+```
+
+Lets make some visual description of the composition of MAGs (especially between wild and captive individuals)
+```{r Make barplots, fig.height=4, fig.width=12}
+set.seed(1) # This makes the plot appear the same each time it is run 
+my_pal <- c("#8D929D","#C65B5B","#00A08A", "#FFA44F","#007057","#C6A5B1","#2BF1DB","#6F6F6F") # very important...
+MAGs_ps = subset_taxa(physeq.tmp, Phylum != "Other")
+Mycoplasma_ps = subset_taxa(physeq.tmp, Genus == "Mycoplasma")
+# how much is explained by the MAG catalogue? 
+mean(round(colSums(MAGs_ps@otu_table@.Data),5)*100) # 99.98%
+#How much is Mycoplasma
+mean(round(colSums(Mycoplasma_ps@otu_table@.Data),5)*100) # 90.67%
+
+#How much is NWS_MAG_0006
+round(mean(Mycoplasma_ps@otu_table@.Data[4,]),5)*100 # 83.41%
+
+p_gut = plot_bar(MAGs_ps, "Sample", fill = "Genus") + 
+  geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_brewer(palette = "Paired") +
+  scale_color_brewer(palette = "Paired") +
+  labs(x = "Individuals") +
+  labs(y = "Relative MAG Abundance")
+
+#p_gut + facet_wrap(~Location, scales = "free", nrow = 1)
+#p_gut + facet_wrap(~Sex, scales = "free", nrow = 1)
+#p_gut + facet_wrap(~Stomach_Content, scales = "free", nrow = 1)
+
+
+GP.ord <- ordinate(MAGs_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa = plot_ordination(MAGs_ps, GP.ord, type="samples",
+                     color="Location",
+                     label="ID",
+                     title="Microbiota composition of wild Norwegian salmon") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+pcoa + facet_wrap(~Location, nrow = 1)
+```
+
+```{r Make barplots, fig.height=4, fig.width=12}
+set.seed(1) # This makes the plot appear the same each time it is run 
+
+Mycoplasma_ps@tax_table@.Data[,7] <- rownames(Mycoplasma_ps@tax_table@.Data)
+p_Mycoplasma = plot_bar(Mycoplasma_ps, "Sample", fill = "Species") + 
+  geom_bar(aes(color=Species, fill=Species), stat="identity", position="stack") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_brewer(palette = "RdPu") +
+  scale_color_brewer(palette = "RdPu") +
+  labs(x = "Individuals") +
+  labs(y = "Relative MAG Abundance")
+
+p_Mycoplasma = p_Mycoplasma + facet_wrap(~Location, scales = "free", nrow = 1)
+
+
+GP.ord <- ordinate(Mycoplasma_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_Mycoplasma = plot_ordination(Mycoplasma_ps, GP.ord, type="samples",
+                     color="Location",
+                     label="ID",
+                     title="Mycoplasma composition of wild Norwegian salmon") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+pcoa_Mycoplasma = pcoa_Mycoplasma + facet_wrap(~Location,  nrow = 1)
+#pdf("Mycoplasma_Composition.pdf", height = 6, width = 12)
+plot_grid(p_Mycoplasma,pcoa_Mycoplasma, nrow = 2, labels = 'AUTO')
+#dev.off()
+```
+
+```{r Make barplots PDF, fig.height=4, fig.width=12}
+p1_1 <- p_gut + facet_wrap(~Location, scales = "free", nrow = 1)
+p1_2 <- pcoa + facet_wrap(~Location, nrow = 1)
+# Make PDF
+#pdf("MAG_Composition.pdf", height = 6, width = 12)
+plot_grid(p1_1,p1_2, nrow = 2, labels = 'AUTO')
+#dev.off()
+```
+Lets make some richness/diversity assessment of gut microbiota
+
+```{r Make diversity}
+## Make physeq object
+class(df) <- "integer"
+df.rich <- round(df.tmp*1000000,0) # make TMP normalised data to round percentage
+physeq.rich <- phyloseq(otu_table(df.rich,taxa_are_rows=TRUE),
+               tax_table(tax),
+               sample_data(md))
+#
+random_tree = rtree(ntaxa(physeq.rich), rooted=TRUE, tip.label=taxa_names(physeq.rich))
+physeq.rich = merge_phyloseq(physeq.rich, random_tree)
+MAGs_div = subset_taxa(physeq.rich, Phylum != "Other")
+
+#
+```
+```{r Richness plot}
+#pdf("MAG_Richness.pdf", width = 12, height = 4)
+plot_richness(MAGs_div, x="Location", color="Location", measures = c("Observed","Shannon", "Simpson")) + 
+  theme_cowplot() + 
+  geom_point(size=5) + 
+  xlab("Location") +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal) + xlab("") +
+  geom_boxplot(alpha=0.6)+ 
+  theme(legend.position="none", axis.text.x=element_text(angle=45,hjust=1,vjust=1,size=12))
+#dev.off()
+
+
+richness <- estimate_richness(MAGs_div, measures = c("Observed","Shannon", "Simpson"))
+md.richness <- md[match(rownames(richness),md$ID),]
+richness <- cbind(md.richness, richness)
+
+
+plot_list <- list()
+for (i in c("Observed", "Shannon", "Simpson")){
+divtestdata <- data.frame(MAG = richness[,i], Location = richness$Location)
+
+shapiro <- shapiro.test(divtestdata$MAG)
+shapiro$p.value
+if (shapiro$p.value > 0.05) {
+  test <- c("TukeyHSD")
+  stat.test <- divtestdata %>%
+  group_by("Location") %>%
+  TukeyHSD(MAG ~ Location) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+} else {
+  test <- c("NP Dunn")
+  stat.test <- divtestdata %>%
+  group_by("Location") %>%
+  dunn_test(MAG ~ Location) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+}
+
+stat.test$p.adj <- round(stat.test$p.adj,3)
+
+stat.test <- stat.test %>%
+  add_x_position(x = "Location", dodge = 0.8) %>%
+  add_y_position()
+
+divtestdata$Location <- factor(divtestdata$Location, levels=c("Alta", "Andøya", "Bugøynes", "Månes/Tosken", "Nordkapp"))
+
+    # Create a box plot
+plot = ggboxplot(
+      divtestdata, x = "Location", y = "MAG", 
+      color = "black",
+      fill = "Location",
+      outlier.shape = 8,
+      size = 0.5,
+      title = "")  + 
+      stat_pvalue_manual(
+        stat.test,  label = paste(test,": α ≤ {p.adj}", sep = ""), tip.length = 0.045,
+        step.increase = 0.01,
+        position = "identity", 
+        #y.position = 1
+        ) 
+plot = plot + xlab("Location") + #changing labels
+  ylab("Alfa Diversity") + ggtitle(i)
+plot_list[[i]] <- plot +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+}
+
+#pdf("Richness_boxplots.pdf", height = 8, width = 12)
+plot_list
+#dev.off()
+```
+```{r}
+richness$q0 <- hill_div(MAGs_div@otu_table@.Data, q= 0)
+richness$q1 <- hill_div(MAGs_div@otu_table@.Data, q= 1)
+richness$q2 <- hill_div(MAGs_div@otu_table@.Data, q= 2)
+
+model <- lm(richness$Longitude~richness$Shannon) # check model
+summary(model)
+
+richness.lm.df <- data.frame("Longitude" = richness$Longitude, 
+                             "Unweighted_q0" = richness$q0, 
+                             "Weighted_q1" = richness$q1,
+                             "Weighted_q2" = richness$q2,
+                             "Location" = richness$Location)
+richness.lm.df <- reshape2::melt(richness.lm.df)
+#pdf("Alfa_Longitude.pdf", height = 10, width = 10)
+ggplot(data = richness.lm.df,
+       aes(x = as.numeric(Longitude), 
+           y= log(value), fill = variable,
+           color = variable,
+           label = ifelse(value > 17, Location, ""))) +
+  geom_point() +
+  geom_smooth(method='lm') + theme_minimal() + scale_x_continuous(limits = c(15, 30)) + 
+  xlab("Longitude") +
+  ylab("log Hill-Diversity") +
+  scale_fill_grey(start = 0.1, end = 0.66) +
+  scale_color_grey(start = 0.1, end = 0.66) +
+  geom_text(aes(color=variable), vjust=-2.,
+            family = "Helvetica")
+#dev.off()
+```
+Check Mycoplasma MAGs and how they are affected by environmental variables
+Tapeworm
+```{r}
+plot_list <- list()
+for (i in c(rownames(tax)[tax[,6] == "Mycoplasma"])){
+  MAG <- physeq.tmp@otu_table@.Data[i,]
+md.MAG <- md[match(names(MAG),md$ID),]
+md.MAG <- md.MAG[md.MAG$Tapeworm != "NA",]
+MAG <- MAG[match(md.MAG$ID,names(MAG))]
+MAG[MAG == 0] <- NA 
+divtestdata <- data.frame(MAG = MAG, Tapeworm = md.MAG$Tapeworm)
+
+shapiro <- shapiro.test(MAG)
+shapiro$p.value
+if (shapiro$p.value > 0.05) {
+  test <- c("TukeyHSD")
+  stat.test <- divtestdata %>%
+  group_by("Tapeworm") %>%
+  TukeyHSD(MAG ~ Tapeworm) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+} else {
+  test <- c("NP Wilcox")
+  stat.test <- divtestdata %>%
+  group_by("Tapeworm") %>%
+  wilcox_test(MAG ~ Tapeworm) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+}
+
+stat.test <- stat.test %>%
+  add_x_position(x = "Tapeworm", dodge = 0.8) %>%
+  add_y_position()
+
+    # Create a box plot
+plot = ggboxplot(
+      divtestdata, x = "Tapeworm", y = "MAG", 
+      color = "black",
+      fill = "Tapeworm",
+      outlier.shape = 8,
+      size = 0.5,
+      title = "")  + 
+      stat_pvalue_manual(
+        stat.test,  label = paste(test,": p-value = {p.adj}"), tip.length = 0.045,
+        step.increase = 0.09,
+        position = "identity", 
+        #y.position = 1
+        ) 
+plot = plot + xlab("Presence of Tapeworm") + #changing labels
+  ylab("Normalised MAG coverage") + ggtitle(i)
+plot_list[[i]] <- plot
+}
+```
+```{r}
+#pdf("NWS_MAGs_vs_Tapeworm.pdf", height = 28, width = 4)
+cowplot::plot_grid(plot_list[[1]],
+                   plot_list[[2]],
+                   plot_list[[3]],
+                   plot_list[[4]],
+                   plot_list[[5]],labels = 'AUTO', ncol = 1)
+#dev.off()
+```
+Nematode
+```{r}
+plot_list <- list()
+for (i in c(rownames(tax)[tax[,6] == "Mycoplasma"])){
+  MAG <- physeq.tmp@otu_table@.Data[i,]
+md.MAG <- md[match(names(MAG),md$ID),]
+md.MAG <- md.MAG[md.MAG$Nematode != "NA",]
+MAG <- MAG[match(md.MAG$ID,names(MAG))]
+MAG[MAG == 0] <- NA 
+divtestdata <- data.frame(MAG = MAG, Nematode = md.MAG$Nematode)
+
+shapiro <- shapiro.test(MAG)
+shapiro$p.value
+if (shapiro$p.value > 0.05) {
+  test <- c("TukeyHSD")
+  stat.test <- divtestdata %>%
+  group_by("Nematode") %>%
+  TukeyHSD(MAG ~ Nematode) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+} else {
+  test <- c("NP Wilcox")
+  stat.test <- divtestdata %>%
+  group_by("Nematode") %>%
+  wilcox_test(MAG ~ Nematode) %>%
+  adjust_pvalue(method = "fdr") %>%
+  add_significance("p.adj")
+}
+
+stat.test <- stat.test %>%
+  add_x_position(x = "Nematode", dodge = 0.8) %>%
+  add_y_position()
+
+    # Create a box plot
+plot = ggboxplot(
+      divtestdata, x = "Nematode", y = "MAG", 
+      color = "black",
+      fill = "Nematode",
+      outlier.shape = 8,
+      size = 0.5,
+      title = "")  + 
+      stat_pvalue_manual(
+        stat.test,  label = paste(test,": p-value = {p.adj}"), tip.length = 0.045,
+        step.increase = 0.09,
+        position = "identity", 
+        #y.position = 1
+        ) 
+plot = plot + xlab("Presence of Nematode") + #changing labels
+  ylab("Normalised MAG coverage") + ggtitle(i)
+plot_list[[i]] <- plot
+}
+```
+```{r}
+#pdf("NWS_MAGs_vs_Nematode.pdf", height = 28, width = 4)
+cowplot::plot_grid(plot_list[[1]],
+                   plot_list[[2]],
+                   plot_list[[3]],
+                   plot_list[[4]],
+                   plot_list[[5]],labels = 'AUTO', ncol = 1)
+#dev.off()
+```
+
+Now lets have a look on the different genes and functions in the metagenome.
+```{r Clean up temp}
+rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
+gc() #free up memrory and report the memory usage.
+```
+
+
+```{r Genes and function distribution}
+gene_coverage <- read_xlsx("NWS-GENE-COVERAGES.xlsx")
+gene_info <- read_xlsx("NWS_COG_Functions.xlsx")
+gene_function <- gene_info[gene_info$source == "COG20_FUNCTION",]
+gene_category <- gene_info[gene_info$source == "COG20_CATEGORY",]
+read_stat <- read_xlsx("Read_stat.xlsx")
+rm(gene_info)
+identical(gene_coverage$key,gene_function$gene_callers_id)
+
+# Only keep genes with function calls
+gene_coverage <- as.matrix(gene_coverage)
+rownames(gene_coverage) <- gene_coverage[,1]
+gene_coverage <- gene_coverage[,-c(1)]
+class(gene_coverage) <- "numeric"
+gene_coverage <- na.omit(gene_coverage)
+# Tidy up function calls
+gene_category <- as.matrix(gene_category)
+rownames(gene_category) <- as.character(gene_category[,1])
+
+# Normalise for read depth
+gene_coverage <- gene_coverage/read_stat$total_reads_mapped
+
+
+## Import metadata
+md <- read_xlsx("metadata.xlsx")
+# Tidy up md
+md <- as.matrix(md)
+rownames(md) <- md[,1]
+md <- as.data.frame(md)
+
+## Make physeq object
+physeq <- phyloseq(otu_table(gene_coverage,taxa_are_rows=TRUE),
+               tax_table(gene_category),
+               sample_data(md))
+#
+random_tree = rtree(ntaxa(physeq), rooted=TRUE, tip.label=taxa_names(physeq))
+physeq = merge_phyloseq(physeq, random_tree)
+```
+
+```{r Make PCoA functions}
+set.seed(1) # This makes the plot appear the same each time it is run 
+my_pal <- c("#8D929D","#C65B5B","#00A08A", "#FFA44F","#007057","#C6A5B1","#2BF1DB","#6F6F6F") # very important...
+
+GP.ord <- ordinate(physeq, "PCoA", "unifrac", weighted=TRUE)
+pcoa_all = plot_ordination(physeq, GP.ord, type="samples",
+                     color="Location",
+                    label="ID",
+                     title="Overall functional composition of wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+AA_ps = subset_taxa(physeq, function. == "Amino acid transport and metabolism")
+GP.ord <- ordinate(AA_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_AA = plot_ordination(AA_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of amino acid metabolism genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+CA_ps = subset_taxa(physeq, function. == "Carbohydrate transport and metabolism")
+GP.ord <- ordinate(CA_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_CA = plot_ordination(CA_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of carbohydrate metabolism genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+Lipid_ps = subset_taxa(physeq, function. == "Lipid transport and metabolism")
+GP.ord <- ordinate(Lipid_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_Lipids = plot_ordination(Lipid_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of lipid metabolism genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+Defense_ps = subset_taxa(physeq, function. == "Defense mechanisms")
+GP.ord <- ordinate(Defense_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_Defense = plot_ordination(Defense_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of defence function genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+Secondary_ps = subset_taxa(physeq, function. == "Secondary metabolites biosynthesis, transport and catabolism")
+Secondary_ps.fiktered = prune_samples(sample_sums(Secondary_ps)>=0.0000001, Secondary_ps) # We need to remove samples with zero counts of these genes.
+
+GP.ord <- ordinate(Secondary_ps.fiktered, "PCoA", "unifrac", weighted=TRUE)
+
+pcoa_Secondary = plot_ordination(Secondary_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of secondary metabolites genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+Coenzyme_ps = subset_taxa(physeq, function. == "Coenzyme transport and metabolism")
+GP.ord <- ordinate(Coenzyme_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_Coenzyme = plot_ordination(Coenzyme_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of coenzyme metabolites genes in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+Mobile_ps = subset_taxa(physeq, function. == "Mobilome: prophages, transposons")
+GP.ord <- ordinate(Mobile_ps, "PCoA", "unifrac", weighted=TRUE)
+pcoa_Mobile = plot_ordination(Mobile_ps, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Composition of mobile elements in wild Norwegian avians") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+	
+```
+```{r PDF function PCoA}
+pdf("Functions_captive_location_PCoA.pdf", width = 18, height = 5)
+plot_grid(pcoa_all, pcoa_AA, pcoa_CA, pcoa_Lipids, pcoa_Defense,pcoa_Secondary, pcoa_Coenzyme, pcoa_Mobile, labels = 'AUTO', nrow = 2)
+dev.off()
+```
+
+```{r Clean up temp}
+rm(list = ls(all.names = TRUE)) #will clear all objects includes hidden objects.
+gc() #free up memrory and report the memory usage.
+```
+
+Lets look if we can find some patterns between in- and vertebrates composition and MAGs.
+
+Make vertebrate and invertebrate data useable
+```{r}
+#path <- paste("/Users/Jacob/Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
+path <- paste("/Users/bfg522//Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
+
+my_files <- list.files(path = path, pattern = "*.xlsx", full.names = TRUE)
+df.list = lapply(my_files, function(i){
+  x = read_excel(i, sheet = "positive.species.Invertebrates")
+  x = x[,c(2,3)] # here we choose tax name and S_Abundance, which i read counts normalised by genome size, please see https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0176469&type=printable
+  x$file = i
+  x
+})
+
+do <- as.data.frame(do.call(rbind, lapply(df.list, as.vector)))
+df <- cbind(my.var=rownames(do), do)
+df[df == "NULL"] <- NA
+df$file <- stringr::str_remove(df$file, path)
+df$file <- stringr::str_remove(df$file, ".xlsx")
+df$file <- stringr::str_remove(df$file, "/")
+df <- df[,-c(1)]
+
+df.R = df %>%
+  group_by(file) %>%
+  mutate(Total = 
+         sum(S_Abundance),
+         R = round(S_Abundance/Total*100,2))
+
+diet_table <- reshape2::acast(df.R, Name ~ file, function(x) {sort(as.character(x))[1]},
+      value.var = 'R')
+class(diet_table) <- "numeric"
+diet_table[is.na(diet_table)] <- 0
+
+```
+
+Diet tax table
+```{r}
+my_files <- list.files(path = path, pattern = "*.xlsx", full.names = TRUE)
+df.list = lapply(my_files, function(i){
+  x = read_excel(i, sheet = "positive.species.Invertebrates")
+  x = x[,c(2,15,17,19,21,23,25)]
+  x$file = i
+  x
+})
+
+do <- as.data.frame(do.call(rbind, lapply(df.list, as.vector)))
+
+diet_tax_table <- do[match(rownames(diet_table),do$Name),]
+diet_tax_table$Species <- diet_tax_table$Name
+diet_tax_table <- diet_tax_table[,-c(1,8)]
+rownames(diet_tax_table) <- diet_tax_table$Species
+```
+
+
+Loading MAG data
+```{r load data, echo=FALSE}
+# df
+df <- read_xlsx("MAG_coverage.xlsx")
+Bin_Sum <- read_xlsx("bins_summary.xlsx")
+# Tidy up df
+df <- as.matrix(df)
+rownames(df) <- df[,1]
+df <- df[,-c(1)]
+class(df) <- "numeric"
+
+### TMP normalisation
+size <- data.frame(MAG = Bin_Sum$MAG, Length = Bin_Sum$total_length)
+colnames(size) <- c("hgnc_symbol", "transcript_length")
+df.tmp <- NormalizeTPM(df, tr_length = size, scale = 1e+06) # the scale is just a constant, which can be changed, i added a million, so the total sum for each sample i 1.
+colSums(df.tmp) # check Sample sum
+
+MAGtax <- read_xlsx("MAG_Tax.xlsx")
+# Tidy up tax
+MAGtax <- as.matrix(MAGtax)
+rownames(MAGtax) <- rownames(df)
+MAGtax <- MAGtax[,-c(1)]
+# md
+md <- read_xlsx("metadata.xlsx")
+# Tidy up md
+md <- as.matrix(md)
+rownames(md) <- md[,1]
+md <- as.data.frame(md)
+
+
+# Load diet data
+diet <- diet_table
+dietTax <- as.matrix(diet_tax_table) 
+md <- md[match(rownames(t(diet)), md$ID),] # filter out missing samples in diet analysis, since not all samples had invertebrate content in gut content
+
+## Make diet physeq object
+Diet_physeq <- phyloseq(otu_table(diet,taxa_are_rows=TRUE),
+               tax_table(dietTax),
+               sample_data(md))
+#
+random_tree = rtree(ntaxa(Diet_physeq), rooted=TRUE, tip.label=taxa_names(Diet_physeq))
+Diet_physeq = merge_phyloseq(Diet_physeq, random_tree)
+
+
+## Make MAG physeq object
+MAG_physeq <- phyloseq(otu_table(df.tmp,taxa_are_rows=TRUE),
+               tax_table(MAGtax),
+               sample_data(md))
+#
+random_tree = rtree(ntaxa(MAG_physeq), rooted=TRUE, tip.label=taxa_names(MAG_physeq))
+MAG_physeq = merge_phyloseq(MAG_physeq, random_tree)
+
+hist(df.tmp)
+```
+
+```{r Make diet barplots}
+set.seed(1) # This makes the plot appear the same each time it is run 
+my_pal <- c("#8D929D","#C65B5B","#00A08A", "#FFA44F","#007057","#C6A5B1","#2BF1DB","#6F6F6F") # very important...
+
+p_diet = plot_bar(Diet_physeq, "Sample", fill = "Phylum") + 
+  geom_bar(aes(color=Phylum, fill=Phylum), stat="identity", position="stack") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_fill_brewer(palette = "Paired") +
+  scale_color_brewer(palette = "Paired") +
+  labs(x = "Individuals") +
+  labs(y = "Relative Abundance")
+
+GP.ord <- ordinate(Diet_physeq, "PCoA", "unifrac", weighted=TRUE)
+pcoa.diet = plot_ordination(Diet_physeq, GP.ord, type="samples",
+                     color="Location",
+                      label="ID",
+                     title="Invertebrates composition of wild Norwegian salmon") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+#combine plots
+plot_grid(p_diet + facet_wrap(~Location, scales = "free", nrow = 1), 
+          pcoa.diet, labels = 'AUTO', nrow = 2)
+```
+
+```{r Filter data for BORAL}
+MAG_physeq = subset_taxa(MAG_physeq, Phylum != "Other")
+# Check if variance of MAG composition has changed by subsetting
+GP.ord <- ordinate(MAG_physeq, "PCoA", "unifrac", weighted=TRUE)
+pcoa.MAG = plot_ordination(MAG_physeq, GP.ord, type="samples",
+                     color="Location",
+                      label="Sample.Name",
+                     title="Microbiome composition of wild Norwegian salmon") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+
+
+Diet_glom <- tax_glom(Diet_physeq, taxrank="Phylum")
+#TopNOTUs = names(sort(taxa_sums(Diet_physeq), TRUE)[1:10])
+#Diet10 = prune_taxa(TopNOTUs, Diet_physeq)
+
+# Check if variance of diet has changed by subsetting
+GP.ord <- ordinate(Diet_glom, "PCoA", "unifrac", weighted=TRUE)
+pcoa.Diet_glom = plot_ordination(Diet_glom, GP.ord, type="samples",
+                     color="Location",
+                      label="Sample.Name",
+                     title="Subset of diet composition of wild Norwegian salmon") +
+  geom_point(size=5) + theme_bw() +
+  scale_fill_manual(values = my_pal) +
+  scale_color_manual(values = my_pal)
+#pcoa.Diet10
+plot_grid(pcoa.MAG,pcoa.Diet_glom, labels = 'AUTO', nrow = 2)
+
+# Make data for BORAL
+X <- Diet_glom@otu_table@.Data
+
+X.names <- Diet_glom@tax_table@.Data
+rownames(X) <- X.names[,2]
+y <- MAG_physeq@otu_table@.Data
+y <- t(MAG_physeq@otu_table@.Data)
+y.names <- MAG_physeq@tax_table@.Data
+y.names[,7] <- paste(rownames(y.names),": ",y.names[,6], sep = "")
+colnames(y) <- y.names[,7]
+#y[y > 0] <- 1 # make binary for binomial family
+y <- y+1 # add 1 to all, to overcome issues with log normalise 0
+y <- log(y) #log normalise to use for tweedie or lognormal
+
+hist(y)
+
+md <- na.omit(md)
+X <- cbind(t(X),md[,c(6,8,13)])
+
+# Make X categorical values to 0 an 1
+X$Tapeworm[X$Tapeworm == "Yes"] <- 1
+X$Tapeworm[X$Tapeworm == "No"] <- 0
+X$Tapeworm[X$Tapeworm == "NA"] <- 0
+
+X <- as.matrix(X)
+class(X) <- "numeric"
+```
+
+Run multivariate analysis to see if diet affects top 50 of the MAGs, which can explain the differentiation of the composition
+
+```{r BORAL}
+testpath <- file.path(tempdir(), "jagsboralmodel.txt")
+
+mcmc.control. <- list(n.burnin = 10, 
+                    n.iteration = 1000, 
+                    n.thin = 30, 
+                    seed = 1)
+
+fit_traits <- boral(y, X = X, family = "tweedie",
+              mcmc.control = mcmc.control., model.name = testpath,
+              lv.control = list(num.lv = 2, type = "independent", distmat = NULL), save.model = TRUE)
+#
+summary.boral(fit_traits)
+plot(fit_traits)
+```
+
+
+
+
+```{r plot BORAL}
+# Remake ggplot for gg_coefplot to change facets
+coefsplot = function (model, X.labels = NULL, linesize = 1.5, pointsize = 3, 
+    palette = "Greys", single.colour = "black") 
+{
+    dat <- gg_coefsplot_data(model)
+    if (is.null(X.labels)) {
+        labeller = "label_value"
+    }
+    else {
+        if (length(X.labels) != model$num.X) 
+            stop("Expected ", model$num.X, " X variable labels")
+        varnames <- sort(unique(dat$var))
+        if (!is.null(names(X.labels))) {
+            ii <- pmatch(names(X.labels), varnames)
+            if (anyNA(ii)) 
+                stop("Not all label vector names match X variable names")
+            facet.labels <- X.labels
+            names(facet.labels) <- varnames[ii]
+        }
+        else {
+            facet.labels <- X.labels
+            names(facet.labels) <- varnames
+        }
+        labeller <- as_labeller(facet.labels)
+    }
+    dat <- mutate(dat, linecolour = 0.2 + 0.8 * nonzeroness(lower95, 
+        upper95))
+    gg <- ggplot(data = dat, aes(y = revlabel)) + geom_segment(aes(yend = revlabel, 
+        x = lower95, xend = upper95, colour = linecolour), size = linesize, 
+        show.legend = FALSE) + geom_point(aes(x = median, colour = linecolour), 
+        size = pointsize, show.legend = FALSE)
+    if (is.null(palette) || palette == "") {
+        if (is.null(single.colour) || single.colour == "") {
+            single.colour <- "black"
+        }
+        gg <- gg + scale_colour_gradient(low = single.colour, 
+            high = single.colour)
+    }
+    else {
+        gg <- gg + scale_color_distiller(palette = palette, direction = 1)
+    }
+    gg + geom_vline(xintercept = 0, linetype = "dashed") + labs(x = "", 
+        y = "") + facet_wrap(~var, scales = "free_x", labeller = labeller, nrow = 5)
+}
+
+#
+my_lvsplot = function (model, scaling = 1, lvs = c(1, 2), include = c("both", 
+    "objects", "attributes"), group = NULL) 
+{
+    if (length(lvs) != 2 | get_num_lvs(model) < 2) 
+        stop("Presently this function only works for two latent variables")
+    include <- match.arg(include)
+    lv.names <- paste0("lv", lvs)
+    dat <- gg_lvsplot_data(model, scaling)
+    dat <- dat[, c(lv.names, "var", "label")]
+    if (include == "both") {
+        ggplot(data = dat, aes_string(x = lv.names[1], y = lv.names[2])) + 
+            geom_point(aes(colour = var), show.legend = FALSE) + 
+            geom_text_repel(aes(colour = var, label = label), 
+                show.legend = FALSE)
+    }
+    else {
+        var <- ifelse(include == "objects", "lv", "lvcoef")
+        ggplot(data = dat[dat$var == var, ], aes_string(x = lv.names[1], 
+            y = lv.names[2])) + geom_point() + geom_text_repel(aes(label = label))
+    }
+}
+```
+```{r plot BORAL}
+pdf("Bayesian_lv_plot.pdf", height = 12, width = 16)
+plot_grid(gg_lvsplot(fit_traits, include = "both") + scale_color_brewer(palette = "Dark2") + theme_minimal() ,gg_varpart(fit_traits, as.percent = TRUE, label.means = FALSE))
+dev.off()
+
+pdf("Bayesian_coefficients_genus.pdf", height = 32, width = 10)
+plot_grid(coefsplot(fit_traits, palette = "Greens"))
+dev.off()
+```
+
