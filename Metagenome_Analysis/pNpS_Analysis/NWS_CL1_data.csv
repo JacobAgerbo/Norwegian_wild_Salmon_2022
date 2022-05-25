@@ -1,0 +1,25 @@
+ID,PC1,PC2,names,Clusters,Sample,Location,Latitude,Longditude,Region,Data,Sub_Cluster
+D100,-0.108919239,0.270929997,D100,Cluster 1,D100,Moenes/Tosken,NA,NA,Unknown,Rasmussen,Cluster 1
+D11,0.082471935,-0.095235502,D11,Cluster 1,D11,Moenes/Tosken,NA,NA,Unknown,Rasmussen,Cluster 2
+D12,0.069776968,-0.108098046,D12,Cluster 1,D12,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D14,-0.137359863,0.274904757,D14,Cluster 1,D14,Nordkapp,NA,NA,Unknown,Rasmussen,Cluster 1
+D17,0.055297313,-0.105033112,D17,Cluster 1,D17,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D24,-0.137043888,0.270351007,D24,Cluster 1,D24,Nordkapp,NA,NA,Unknown,Rasmussen,Cluster 1
+D26,0.019325595,-0.012983937,D26,Cluster 1,D26,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D27,-0.129231992,0.273984439,D27,Cluster 1,D27,Nordkapp,NA,NA,Unknown,Rasmussen,Cluster 1
+D2,0.074905432,-0.106910299,D2,Cluster 1,D2,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D32,-0.147853279,0.256241581,D32,Cluster 1,D32,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D34,-0.110182734,0.270536041,D34,Cluster 1,D34,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D36,0.089574029,-0.105886436,D36,Cluster 1,D36,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D3,0.039069433,-0.062682997,D3,Cluster 1,D3,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D40,-0.115488701,0.241492249,D40,Cluster 1,D40,Bugoeynes,NA,NA,Unknown,Rasmussen,Cluster 1
+D42,0.066357949,-0.089446655,D42,Cluster 1,D42,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D60,0.076239974,-0.090882834,D60,Cluster 1,D60,Andoeya,NA,NA,Unknown,Rasmussen,Cluster 2
+D65,-0.119220297,0.261426181,D65,Cluster 1,D65,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D71,-0.091272843,0.24393166,D71,Cluster 1,D71,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D7,-0.168289284,0.241728966,D7,Cluster 1,D7,Moenes/Tosken,NA,NA,Unknown,Rasmussen,Cluster 1
+D85,-0.110626448,0.268200048,D85,Cluster 1,D85,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D87,-0.073905824,0.177342184,D87,Cluster 1,D87,Alta,NA,NA,Unknown,Rasmussen,Cluster 1
+D88,-0.095709076,0.236403621,D88,Cluster 1,D88,Moenes/Tosken,NA,NA,Unknown,Rasmussen,Cluster 1
+D92,0.073413427,-0.09334404,D92,Cluster 1,D92,Moenes/Tosken,NA,NA,Unknown,Rasmussen,Cluster 2
+MG38,-0.043264557,0.122535149,MG38,Cluster 1,MG38,Alta,NA,NA,Unknown,Rasmussen,Cluster 1

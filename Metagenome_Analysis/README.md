@@ -18,7 +18,17 @@ Therefore i have made a small bullet list with the overall stuff we have done, b
     - Differential abundance between locations, presence/absence of parasites
     - Correlated response models between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
 
-• Also, we analysed functional diversity from gene abundances, where functions were annotated using COG, KoFAM and PFAM.    
+• Also, we analysed functional diversity from gene abundances, where functions were annotated using COG, KoFAM and PFAM.
+    - Looking at overall composition with PCoA or heatmap
+    - Looking at composition within single COG CATEGORIES
+
+• For a more evolutionary perspective, we investigated SNVs, SCVs, and SAAVs, following the wonderful anvi’o guidelines
+    - SNVs were used to
+    - SCVs were applied for pNpS inferring to look for gene wise selection pressure
+    - SAAVs were used to investigate fixated mutations in the amino acid composition within populations of metagenomes
+
+• SAAVs were used to make a prevalence analysis across host genotypes within Norwegian individuals
+    - SAAVs were analysed in concordance with predicted protein structures used for SNV analysis
 
 ## Analysis
 • All underlying repositories includes datasets needed for result generation and a respective R markdown file.

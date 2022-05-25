@@ -1,0 +1,284 @@
+---
+title: "pNpS_Analysis"
+author: "Jacob Agerbo Rasmussen"
+date: "1/31/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Setting dependencies
+```{r dependencies, echo=FALSE}
+library(readxl);packageVersion("readxl")
+library(tidyverse);packageVersion("tidyverse")
+library(ggplot2);packageVersion("ggplot2")
+library(ggpubr);packageVersion("ggpubr")
+library(ggfortify);packageVersion("ggfortify")
+library(rstatix);packageVersion("rstatix")
+library(cowplot);packageVersion("cowplot")
+library(ComplexHeatmap);packageVersion("ComplexHeatmap")
+library(RColorBrewer);packageVersion("RColorBrewer")
+library(wesanderson);packageVersion("wesanderson")
+```
+
+Loading pNpS data
+```{r load data, echo=FALSE}
+# df
+getwd()
+df <- read.table("pNpS.txt", sep = "\t", header = T)
+colnames(df) <- stringr::str_remove_all(colnames(df), "_OUT")
+colnames(df) <- stringr::str_remove_all(colnames(df), "_ALL")
+rownames(df) <- df$corresponding_gene_call
+df <- df[,-c(1)]
+t_df <- t(df)
+names <- rownames(t_df)
+#
+md <- read.table("NWS_CL1_data.csv", sep = ",", header = T)
+Genecalls <- read_excel("Mycoplasma-gene_calls.xlsx")
+#
+
+md <- md[match(names, md$ID),]
+identical(names,md$ID) # test if samples are in line
+
+Functions <- Genecalls
+```
+
+```{r filter data}
+is.na(df)<-sapply(df, is.infinite)
+df[is.na(df)]<-0 # change NAs to zero, according to Evan Kiefl
+# https://merenlab.org/data/anvio-structure/chapter-III/#per-gene
+#"There is nothing formally wrong with this, and so anvi-gen-variability-profile respects this division by zero, and sets all per-site pS values to NaN (not-a-number) #whenever the reference comparison is ATG or TGG.
+#However, to me it feels more correct to set per-site pS to 0 in such cases. After all, what is the rate of synonymous polymorphism in these scenarios? Well, there #isn’t a rate. It’s zip, zilch–zero, one might even say. And so I set these values accordingly in the following script."
+
+#  First find the desired quantile breaks for the entire matrix
+qt <- quantile(as.matrix(df) , probs = c(0.25,0.75) )
+
+#  Next get a logical vector of the rows that have any values outside these breaks
+rows <- apply( as.matrix(df) , 1 , function(x) any( x < qt[1] | x > qt[2] ) )
+#  Subset on this vector
+df.filter <- df[ rows , ]
+
+```
+
+
+```{r Ordination}
+library(ggfortify)
+pca_res <- prcomp(t(df.filter))
+
+
+PCA.data <- pca_res[["x"]][,1:2]
+PCA.data <- cbind(PCA.data,md)
+colnames(PCA.data) <- c("PC1","PC2","ID", "PC1_Host","PC2_Host","names", "Clusters","Sample","Location","Latitude","Longditude","Region","Data","Sub_Cluster")
+#PCA.data <- PCA.data[PCA.data$ID != "D10",]
+#PCA.data <- PCA.data[PCA.data$ID != "D64",]
+#PCA.data <- PCA.data[PCA.data$ID != "D70",]
+#PCA.data <- PCA.data[PCA.data$ID != "D87",]
+plot_all <- ggplot(data = PCA.data, aes(x = PC1, y = PC2, color = Sub_Cluster, label = ID)) + 
+  geom_point() + 
+  geom_text() + 
+  theme_minimal()
+
+PCA.Cluster_1 <- PCA.data[PCA.data$Sub_Cluster == "Cluster 1",]
+
+plot_cl1 <- ggplot(data = PCA.Cluster_1, aes(x = PC1, y = PC2, color = PC1_Host, label = ID)) + 
+  geom_point() + 
+  geom_text() + 
+  theme_minimal()
+#
+plot_grid(plot_all, plot_cl1, ncol = 1)
+```
+
+```{r Investigate SCVs}
+num_SCVs <- read.csv("num_SCVs.txt", sep = "\t")
+rownames(num_SCVs) <- num_SCVs$corresponding_gene_call
+num_SCVs <- num_SCVs[,-c(1)]
+#
+Host.col <- setNames(RColorBrewer::brewer.pal(name = "Set1", n = sum(table(unique(md$Sub_Cluster)))), list(unique(md$Sub_Cluster)))
+names(Host.col) <- unique(md$PC_Cluster)
+
+Location.col <- setNames(RColorBrewer::brewer.pal(name = "Dark2", n = sum(table(unique(md$Location)))), list(unique(md$Location)))
+names(Location.col) <- unique(md$Location)
+
+col = list("Host" = c("Cluster 1" = "#506191","Cluster 2" = "#cf6406", "Cluster 3" = "#248217"),
+           "Location" = Location.col)
+#Host
+Host <- md$Sub_Cluster
+names(Host) <- md$ID
+#Location
+Location <- md$Location
+names(Location) <- md$ID
+
+#
+ha <- HeatmapAnnotation(
+  Host = c("Host" = Host),
+  Location = c("Location" = Location),  col = col)
+
+col_fun = circlize::colorRamp2(c(0, 1, 50), c("darkblue", "orange", "red"))
+#pdf("num_SCVs.pdf", height = 10, width = 15)
+Heatmap(num_SCVs, col = col_fun, top_annotation = ha)
+#dev.off()
+```
+
+```{r make overview of data, echo=FALSE}
+Host.col <- setNames(RColorBrewer::brewer.pal(name = "Set1", n = sum(table(unique(md$Sub_Cluster)))), list(unique(md$Sub_Cluster)))
+names(Host.col) <- unique(md$PC_Cluster)
+
+Location.col <- setNames(RColorBrewer::brewer.pal(name = "Dark2", n = sum(table(unique(md$Location)))), list(unique(md$Location)))
+names(Location.col) <- unique(md$Location)
+
+col = list("Host" = c("Cluster 1" = "#ff5a3d","Cluster 2" = "#007045"),
+           "Location" = Location.col)
+#Host
+Host <- md$Sub_Cluster
+names(Host) <- md$ID
+#Location
+Location <- md$Location
+names(Location) <- md$ID
+
+#
+ha <- HeatmapAnnotation(
+  Host = c("Host" = Host),
+  Location = c("Location" = Location),  col = col)
+
+
+## Get function panel
+Functions.filter <- Functions[match(rownames(df.filter),Functions$gene_callers_id),]
+
+
+KEGG_Class <- Functions.filter$COG20_CATEGORY
+names(KEGG_Class) <- rownames(df.filter)
+KEGG_Class[is.na(KEGG_Class)] <- "Unknown Function"
+
+num_col <- sum(table(unique(KEGG_Class)))
+KEGG.col <- setNames(RColorBrewer::brewer.pal(name = "Paired", n = num_col), list(unique(KEGG_Class)))
+names(KEGG.col) <- unique(KEGG_Class)
+KEGG.col <- list(KEGG.col)
+names(KEGG.col) <- "KEGG_Class"
+
+KEGG.col[[1]][["Unknown Function"]] <- "#e8e8e8"
+
+ha_mix_right = rowAnnotation("KEGG_Class" = KEGG_Class,
+  col = KEGG.col
+  )
+
+
+```
+
+```{r plot heatmap}
+#md$Host_Origin_uniq <- paste(md$PC_Cluster, md$ID)
+#order <- sort(md$Host_Origin_uniq)
+#order 
+#colnames(df.filter) <- md$Host_Origin_uniq
+#pdf("pNpS_heatmap.pdf", height = 6, width = 12)
+col_fun = circlize::colorRamp2(c(0, 1, 5), c("darkblue", "orange", "red"))
+Heatmap(df.filter,
+        clustering_distance_columns = "maximum",
+        clustering_method_columns = "ward.D",
+        top_annotation = ha, col = col_fun) #+ ha_mix_right
+#dev.off()
+```
+
+```{r plot heatmap}
+pN <- read.table("pN.txt", sep = "\t", header = T)
+rownames(pN) <- pN$corresponding_gene_call
+pN <- pN[,-c(1)]
+pN[is.na(pN)] <- 0
+
+t_pN <- as.data.frame(t(pN))
+t_pN$Sub_Cluster <- md$Sub_Cluster
+
+pN_sCL1 <- t_pN[t_pN$Sub_Cluster == "Cluster 1",]
+pN_sCL1 <- pN_sCL1[,-c(603)]
+pN_sCL1 <- t(pN_sCL1)
+
+pN_sCL2 <- t_pN[t_pN$Sub_Cluster == "Cluster 2",]
+pN_sCL2 <- pN_sCL2[,-c(603)]
+pN_sCL2 <- t(pN_sCL2)
+
+#
+pS <- read.table("pS.txt", sep = "\t", header = T)
+rownames(pS) <- pS$corresponding_gene_call
+pS <- pS[,-c(1)]
+pS[is.na(pS)] <- 0
+
+t_pS <- as.data.frame(t(pS))
+t_pS$Sub_Cluster <- md$Sub_Cluster
+
+pS_sCL1 <- t_pS[t_pS$Sub_Cluster == "Cluster 1",]
+pS_sCL1 <- pS_sCL1[,-c(603)]
+pS_sCL1 <- t(pS_sCL1)
+
+pS_sCL2 <- t_pS[t_pN$Sub_Cluster == "Cluster 2",]
+pS_sCL2 <- pS_sCL2[,-c(603)]
+pS_sCL2 <- t(pS_sCL2)
+
+#
+pN_Cl1_mean <- rowMeans(pN_sCL1)
+pN_Cl2_mean <- rowMeans(pN_sCL2)
+pS_Cl1_mean <- rowMeans(pS_sCL1)
+pS_Cl2_mean <- rowMeans(pS_sCL2)
+
+pS_mean_all <- rowMeans(pS)
+pN_mean_all <- rowMeans(pN)
+
+pNpS_mean <- data.frame("gene_call_id" = rownames(pN),"pS_cl1" = pS_Cl1_mean, "pN_cl1" = pN_Cl1_mean,"pS_cl2" = pS_Cl2_mean, "pN_cl2" = pN_Cl2_mean, "pS_all" = rowSums(pS), "pN_all" = rowSums(pN),   "Size_cl1" = pN_Cl1_mean/pS_Cl1_mean,  "Size_cl2" = pN_Cl2_mean/pS_Cl2_mean, "Size_All" = pN_mean_all/pS_mean_all)
+
+pNpS_mean$Size_cl1[is.na(pNpS_mean$Size_cl1)] <- 0
+pNpS_mean$Size_cl2[is.na(pNpS_mean$Size_cl2)] <- 0
+pNpS_mean$Size_All[is.na(pNpS_mean$Size_All)] <- 0
+
+
+# Functions
+Genecalls <- Genecalls[match(pNpS_mean$gene_call_id, Genecalls$gene_callers_id),]
+pNpS_mean$COG_CATEGORY <- Genecalls$COG20_CATEGORY
+pNpS_mean$COG_FUNCTION <- Genecalls$COG20_FUNCTION
+pNpS_mean$PFAM <- Genecalls$Pfam
+pNpS_mean$KoFAM <- Genecalls$KOfam
+
+
+# Cluster 1
+pNpS_mean$Color_1 <- ifelse(pNpS_mean$Size_cl1 > 1., pNpS_mean$COG_CATEGORY, "")
+pNpS_mean$Color_2 <- ifelse(pNpS_mean$Size_cl2 > 1., pNpS_mean$COG_CATEGORY, "")
+pNpS_mean$Color_all <- ifelse(pNpS_mean$Size_All > 1., pNpS_mean$COG_CATEGORY, "")
+
+pNpS_cl1.plot <- ggplot(data = pNpS_mean,
+       aes(x = pS_cl1,
+           y = pN_cl1, size = Size_cl1, color = Color_1, fill = Color_1)) + geom_point(alpha = ifelse(pNpS_mean$Size_cl1 > 1, 0.9,0.25)) + 
+  geom_abline(linetype = 2) + 
+  theme_minimal() + 
+   scale_fill_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+   scale_color_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+  xlab("Average pS") +
+  ylab("Average pN")
+
+
+pNpS_cl2.plot <- ggplot(data = pNpS_mean,
+       aes(x = pS_cl2,
+           y = pN_cl2, size = Size_cl2, color = Color_2, fill = Color_2)) + geom_point(alpha = ifelse(pNpS_mean$Size_cl2 > 1, 0.9,0.25)) + 
+  geom_abline(linetype = 2) + 
+  theme_minimal() + 
+   scale_fill_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+   scale_color_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+  xlab("Average pS") +
+  ylab("Average pN")
+
+pNpS_all.plot <- ggplot(data = pNpS_mean,
+       aes(x = pS_all,
+           y = pN_all, size = Size_All, color = Color_2, fill = Color_all)) + geom_point(alpha = ifelse(pNpS_mean$Size_All > 1, 0.9,0.25)) + 
+  geom_abline(linetype = 2) + 
+  theme_minimal() + 
+   scale_fill_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+   scale_color_manual(values = c(wes_palette("Zissou1"),wes_palette("Rushmore1")[c(2,4,5,1,3)])) + 
+  xlab("Average pS") +
+  ylab("Average pN")
+```
+
+```{r}
+#pdf("pNpS_per_cluster_KOFAM.pdf", height = 10, width = 16)
+pNpS_cl1.plot + geom_text(label = ifelse(pNpS_mean$Size_cl1 > 1., pNpS_mean$KoFAM,"")) + ggtitle("pNpS ratio of genes in Cluster 1 related MSS")
+pNpS_cl2.plot + geom_text(label = ifelse(pNpS_mean$Size_cl2 > 1., pNpS_mean$KoFAM,"")) + ggtitle("pNpS ratio of genes in Cluster 2 related MSS")
+pNpS_cl2.plot + geom_text(label = ifelse(pNpS_mean$Size_cl2 > 1., pNpS_mean$KoFAM,"")) + ggtitle("pNpS ratio of genes in both Clusters related MSS")
+#dev.off()
+```
