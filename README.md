@@ -10,7 +10,7 @@ Through our investigations we hereby present the first genome catalogue from wil
 **Conclusion**
 Investigations of the coevolution of host and microbiota in Atlantic salmon will lead to a higher understanding of the interactions from both actors. It is clear from our results that the microbiota from Atlantic salmon has adapted to the population structure through a close relationship between its genome and gut microbiome, showing that Atlantic salmon can be a suitable model for studying host-microbiome coevolution.
 
-![Graphical overview](.resources/Draft_Abstract.png)
+![Graphical overview](.resources/Draft_Abstract.jpg)
 
 ## Bioinformatics
 • All underlying repositories includes a walk through of bioinformatic code and descriptions to increase reproducibility
