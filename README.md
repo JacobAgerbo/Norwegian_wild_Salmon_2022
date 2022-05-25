@@ -12,8 +12,8 @@ Investigations of the coevolution of host and microbiota in Atlantic salmon will
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://https://github.com/JacobAgerbo/Norwegian_wild_Salmon_2022/.resources/Draft_Abstract.jpg">
-  <source media="(prefers-color-scheme: light)" srcset="https://https://github.com/JacobAgerbo/Norwegian_wild_Salmon_2022/.resources/Draft_Abstract.jpg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/JacobAgerbo/Norwegian_wild_Salmon_2022/blob/main/.resources/Draft_Abstract.jpg">
+  <source media="(prefers-color-scheme: light)" srcset="https://github.com/JacobAgerbo/Norwegian_wild_Salmon_2022/blob/main/.resources/Draft_Abstract.jpg">
 </picture>
 
 
