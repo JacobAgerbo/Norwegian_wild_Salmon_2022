@@ -13,19 +13,28 @@ Therefore i have made a small bullet list with the overall stuff we have done, b
 • Prior our analysis of MAGs, we normalised coverage of MAGs based on sum of coverage (sequencing depth) and genome length, basically like [TMP normalisation](https://www.rna-seqblog.com/rpkm-fpkm-and-tpm-clearly-explained/)
 
 • Read recruitment of MAGs were used for following classical ecological measurements for diversity, like:
-    - Richness, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
-    - Composition, PCoA with weigthed UniFrac distances
-    - Differential abundance between locations, presence/absence of parasites
-    - Correlated response models between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
+
+  - Richness, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
+
+  - Composition, PCoA with weigthed UniFrac distances
+
+  - Differential abundance between locations, presence/absence of parasites
+
+  - Correlated response models between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
 
 • Also, we analysed functional diversity from gene abundances, where functions were annotated using COG, KoFAM and PFAM.
-    - Looking at overall composition with PCoA or heatmap
-    - Looking at composition within single COG CATEGORIES
+
+  - Looking at overall composition with PCoA or heatmap
+
+  - Looking at composition within single COG CATEGORIES
 
 • For a more evolutionary perspective, we investigated SNVs, SCVs, and SAAVs, following the wonderful anvi’o guidelines
-    - SNVs were used to
-    - SCVs were applied for pNpS inferring to look for gene wise selection pressure
-    - SAAVs were used to investigate fixated mutations in the amino acid composition within populations of metagenomes
+
+  - SNVs were used to infer potential genotypic variation and concordance with host genotype
+
+  - SCVs were applied for pNpS inferring to look for gene wise selection pressure
+
+  - SAAVs were used to investigate fixated mutations in the amino acid composition within populations of metagenomes
 
 • SAAVs were used to make a prevalence analysis across host genotypes within Norwegian individuals
     - SAAVs were analysed in concordance with predicted protein structures used for SNV analysis

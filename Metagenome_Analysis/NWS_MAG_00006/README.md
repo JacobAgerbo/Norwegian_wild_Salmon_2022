@@ -15,7 +15,7 @@ This Github repository includes the analytical framework to generate results tha
 
 **First of all - I’m a massive anvi’o fanboy, thank you so much for the amazing platform**
 All of these analyses have been made through anvi’o, since it works smoothly and are super user friendly,
-so if you don’t used anvi’o yet, then get sh*t together and use it:+1::kissing_heart:!
+so if you don’t used anvi’o yet, then get sh*t together and use it :+1::kissing_heart:!
 
 ### SNV Analysis
 So... I will not take any credit (only that i followed their tutorial, without major f*ckups),
@@ -79,3 +79,9 @@ anvi-get-pn-ps-ratio -V NWS_SCVs.txt \
                      --pivot \
                      -o NWS_pNpS
 ```
+
+For reproducing the analysis, please find R markdown in the pNpS repository.
+
+With a bit of brush up in Inkscape or Affinity, voila!
+
+![SNV Analysis](./SNV_Analysis/SNV_ANALYSIS_NWS_MAG_00006.jpg)
