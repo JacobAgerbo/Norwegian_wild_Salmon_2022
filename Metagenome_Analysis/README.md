@@ -14,11 +14,11 @@ Therefore i have made a small bullet list with the overall stuff we have done, b
 
 • Read recruitment of MAGs were used for following classical ecological measurements for diversity, like:
     - Richness, using Hill diversity (quite a nice and transparent framework - compared to Shannon and Simpson)
-    - Composition, PCoA with weigthed UniFrac.
+    - Composition, PCoA with weigthed UniFrac distances
+    - Differential abundance between locations, presence/absence of parasites
+    - Correlated response models between MAG abundance and other sample informations, like size, diet composition, etc, using [BORAL](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12514)
 
-
-## Bioinformatics
-• All underlying repositories includes a walk through of bioinformatic code and descriptions to increase reproducibility
+• Also, we analysed functional diversity from gene abundances, where functions were annotated using COG, KoFAM and PFAM.    
 
 ## Analysis
 • All underlying repositories includes datasets needed for result generation and a respective R markdown file.
