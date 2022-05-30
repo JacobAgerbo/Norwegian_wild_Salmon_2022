@@ -11,6 +11,7 @@ The gut microbiota is shaped by a vast blend of environmental and evolutionary p
 Through our investigations we hereby present the first genome catalogue from wild Atlantic salmon (*Salmo salar*) derived from more than 70 wild adult foraging salmon. Despite the high variation in location, diet, stomach content, size, sex, and presence of endoparasites between individuals, very low variation of the gut microbiota were found. The recovered gut microbiota were found of low complexity and mainly dominated by the salmonid related Mycoplasma (*Candidatus* Mycoplasma salmoninae salar), which were found highly host-specific, indicating a strong selection pressure of the gut microbiota by Atlantic salmon. Interestingly, we found a high concordance between the population structure of Atlantic salmon and the nucleotide variability of *Candidatus* Mycoplasma salmoninae salar, clearly suggesting co-evolution.
 
 **Conclusion**
+
 Investigations of the coevolution of host and microbiota in Atlantic salmon will lead to a higher understanding of the interactions from both actors. It is clear from our results that the microbiota from Atlantic salmon has adapted to the population structure through a close relationship between its genome and gut microbiome, showing that Atlantic salmon can be a suitable model for studying host-microbiome coevolution.
 
 ![Graphical overview](.resources/Draft_Abstract.jpg)
