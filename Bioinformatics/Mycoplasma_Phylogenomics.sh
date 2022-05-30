@@ -1,43 +1,38 @@
-########################################################################################################################################################
-####################                                        MYCOPLASMA PAN- AND PHYLOGENOMICS                                       ####################
-########################################################################################################################################################
+#### Framework for PHYLOGENOMICS, using Anvio
 
-### Create Anvio DB's for each genome
-for i in *fa
+# rename fasta according to header
+for fname in *.fna; do
+mv -- "$fname" \
+"$(awk 'NR==1{printf("%s_%s_%s\n",$2,$3,substr($1,2));exit}' "$fname")".fna
+done
+
+for i in `ls *fna | awk 'BEGIN{FS=".fna"}{print $1}'`
 do
-	anvi-script-FASTA-to-contigs-db $i
+    anvi-script-reformat-fasta $i.fna -o $i-fixed.fa -l 0 --simplify-names
+    mv $i.fna FASTA
+    anvi-gen-contigs-database -f $i-fixed.fa -o $i.db -T 10
+    anvi-run-hmms -c $i.db
+    rm $i-fixed.fa
 done
 
+# make external-genomes.txt
+find *fna.gz > external-genomes.txt
+# open vim/nano/excel and make rest....
 
-### Create HMMs for a DB's
-for a in *CONTIGS.db
-  do
-    anvi-run-hmms -c ./"$a"
-done
 
-### create protein allignment
-anvi-get-sequences-for-hmm-hits --external-genomes external-genomes_2.txt \
+##
+anvi-get-sequences-for-hmm-hits --external-genomes external-genomes.txt \
                                 -o concatenated-proteins.fa \
                                 --hmm-source Bacteria_71 \
+                                --gene-names Ribosomal_L1,Ribosomal_L2,Ribosomal_L3,Ribosomal_L4,Ribosomal_L5,Ribosomal_L6 \
                                 --return-best-hit \
                                 --get-aa-sequences \
                                 --concatenate
-
-# Log: 2477 hits for 1 source(s) / 2464 hits remain after removing weak hits for multiple hits
-
-### Generate phylogenomic tree
+###
 anvi-gen-phylogenomic-tree -f concatenated-proteins.fa \
                            -o phylogenomic-tree.txt
-
-## Alignment sequence length ....................: 16,768
-
-
 ###
 anvi-interactive -p phylogenomic-profile.db \
                  -t phylogenomic-tree.txt \
-                 --title "Phylogenomics of Mycoplasma" \
                  --manual \
-                 --server-only \
-                 -d view.txt
-
-##
+                 --server-only

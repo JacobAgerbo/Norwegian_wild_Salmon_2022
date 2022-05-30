@@ -20,7 +20,6 @@ for db in CONTIGS.db
 done
 
 ## Assign Taxonomy with KAIJU
-module load kaiju/1.5.0
 anvi-get-sequences-for-gene-calls -c $CONTIGS/CONTIGS.db -o gene_calls.fa
 
 kaiju_path='path/to/kaiju/2020-05-25_nr_euk'
