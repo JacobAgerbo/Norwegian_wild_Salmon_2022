@@ -556,8 +556,8 @@ Lets look if we can find some patterns between in- and vertebrates composition a
 
 Make vertebrate and invertebrate data useable
 ```{r}
-#path <- paste("/Users/Jacob/Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
-path <- paste("/Users/bfg522//Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
+path <- paste("/Users/Jacob/Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
+#path <- paste("/Users/bfg522//Dropbox/Arbejde/PhD/HappyFish/Writing/NWS/NWS_MGmapper/Invertebrates/")
 
 my_files <- list.files(path = path, pattern = "*.xlsx", full.names = TRUE)
 df.list = lapply(my_files, function(i){
@@ -751,8 +751,8 @@ Run multivariate analysis to see if diet affects top 50 of the MAGs, which can e
 ```{r BORAL}
 testpath <- file.path(tempdir(), "jagsboralmodel.txt")
 
-mcmc.control. <- list(n.burnin = 10, 
-                    n.iteration = 1000, 
+mcmc.control. <- list(n.burnin = 100, 
+                    n.iteration = 10000, 
                     n.thin = 30, 
                     seed = 1)
 
@@ -760,8 +760,11 @@ fit_traits <- boral(y, X = X, family = "tweedie",
               mcmc.control = mcmc.control., model.name = testpath,
               lv.control = list(num.lv = 2, type = "independent", distmat = NULL), save.model = TRUE)
 #
-summary.boral(fit_traits)
-plot(fit_traits)
+#fit_traits <- readRDS("BORAL_model.rds")
+#summary.boral(fit_traits)
+#plot(fit_traits)
+
+#saveRDS(fit_traits, "BORAL_model.rds")
 ```
 
 
