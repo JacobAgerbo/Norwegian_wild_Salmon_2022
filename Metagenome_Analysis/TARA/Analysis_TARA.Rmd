@@ -1,0 +1,49 @@
+---
+  title: "Presence of MSS in TARA Ocean data"
+author: "Jacob Agerbo Rasmussen"
+date: "6/15/2022"
+output:
+  html_document: default
+pdf_document: default
+---
+  
+  # Set dependencies
+```{r load dependecies, warning=FALSE, tidy=TRUE, message=FALSE}
+library(ggplot2)
+library(readxl)
+library(RColorBrewer)
+library(ggpubr)
+library(knitr)
+library(wesanderson)
+
+```
+
+```{r load data, echo=FALSE}
+# get excel from https://www.google.com/url?q=https://static-content.springer.com/esm/art%253A10.1038%252Fs41396-021-01135-1/MediaObjects/41396_2021_1135_MOESM3_ESM.xlsx&sa=D&source=docs&ust=1655288895461814&usg=AOvVaw0OXjrdjdw0uOV-lL0JH8SA 
+#Thanks to Tom Delmont, see https://www.nature.com/articles/s41396-021-01135-1#Sec28
+df <- read_excel("Table_S02_statistics_1888_MAGs.xlsx")
+df_Arctic <- df[df$Portion_ALL_Arctic > 0,]
+```
+
+```{r make plot, echo=FALSE}
+pal <- c(
+        RColorBrewer::brewer.pal(8,'Dark2'),
+        RColorBrewer::brewer.pal(12,'Paired'))
+        
+plot <- ggplot(data = df_Arctic,
+               aes(x = Genome_Id, 
+                   y = Portion_ALL_Arctic, 
+                   color = `Phylum gtdbtk...4`, 
+                   fill = `Phylum gtdbtk...4`)) + geom_bar(stat="identity") +
+  scale_color_manual(values = pal) + 
+  scale_fill_manual(values = pal) +
+  xlab("MAG") + ylab("Presence in the Ocean (%)")
+
+```
+```{r plot}
+jpeg("Arctic_TARA.jpeg", width = 1200, height = 400)
+#pdf("Arctic_TARA.pdf", width = 12, height = 4)
+plot + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#
+dev.off()
+```
