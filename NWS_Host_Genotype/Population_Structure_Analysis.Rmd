@@ -1,0 +1,403 @@
+---
+title: "Host_Genotype_population_structure"
+author: "Jacob Agerbo Rasmussen"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggfortify)
+library(ggplot2)
+library(readr)
+library(readxl)
+library(dplyr)
+library(RColorBrewer)
+library(wesanderson)
+library(vegan)
+library(ggpubr)
+library(factoextra)
+library(cluster)
+library(plotly)
+library(reshape2)
+library(fpc)
+library(cowplot)
+library(ggdendro)
+library(dendextend)
+library(tidyverse)
+library(ComplexHeatmap)
+source("./Admix/evalAdmix/visFuns.R")
+```
+
+The first thing we assess in the covariance between individuals, using PCA. Covariance matrix has been recovered with genotype likelihoods, using ANGSD (http://www.popgen.dk/angsd/index.php/PCA). To minimise inflation, we used minimmal maf of 0.05. We only kept sites present in 90% of individuals (70.2 individuals).
+
+See code;
+angsd -bam /home/projects/ku-cbd/data/jacras/3-NWS/08_Host_Genotype/sample_list.txt -nThreads 40 -minMapQ 30 -minQ 20 -doGlf 2 -GL 2 -out all -doMajorMinor 1 -doMaf 1 -SNP_pval 2e-6 -doIBS 1 -doCounts 1 -doCov 1 -makeMatrix 1 -minMaf 0.05 -minInd 70.2
+
+```{r data loading and handling, echo=FALSE}
+d <- read.table("50p_Individuals.covMat")
+labels <- read.table("sample_list_all_salmon.txt", header = T, sep = "\t")
+md <- read.csv("sample_list_all_salmon.txt", sep = "\t", encoding = "UTF-8")
+rownames(md) <- md$Sample
+#colnames(md) <- c("Sample","Mean_Coverage","Location")
+rownames(d) <- labels$Sample
+colnames(d) <- labels$Sample
+#md <- read_excel("Metadata.xlsx")
+
+d <- d[match(md$Sample, rownames(d)),]
+d <- t(d)
+d <- d[match(md$Sample, rownames(d)),]
+d <- t(d)
+
+col_fun = circlize::colorRamp2(c(-0.1, 0, .1), c("darkblue", "orange", "red"))
+Heatmap(d, col = col_fun)
+```
+```{r calculate optimale clusters of genotypes, echo=FALSE}
+#
+pamk.best <- pamk(d)
+cat("number of clusters estimated by optimum average silhouette width:", pamk.best$nc, "\n")
+plot(pam(d, pamk.best$nc))
+
+#
+asw <- numeric(45)
+for (k in 2:45){
+  asw[[k]] <- pam(d, k) $ silinfo $ avg.width
+}
+k.best <- which.max(asw)
+cat("silhouette-optimal number of clusters:", k.best, "\n")
+# still 2
+```
+Okay, so a large chunk of our genotypes seems a bit off and might wash out variance from the Norwegian population structure, since we only cluster between data from our study and bertolotti et al. data. 
+
+
+```{r PCA and clustering of samples, echo=FALSE}
+res.pca <- prcomp(d)
+
+PCA.plot <- autoplot(prcomp(d), data =md, colour = 'Region', label = TRUE, size = 1) + 
+  theme_classic() + 
+  scale_color_brewer(palette = "Paired")
+
+fviz_eig(res.pca)
+library("factoextra")
+PC <- get_pca(res.pca, element = c("ind"))
+PCs <- as.data.frame(PC$coord[,1])
+PCs$PC2 <- c(PC$coord[,2])
+PCs$Sample <- rownames(PCs)
+colnames(PCs) <- c("PC1","PC2","Sample")
+#write_csv(PCs, file = "PCs_coordinates.csv")
+
+NWSHC <- hclust(dist(d),method = "ward.D2")
+#
+NWS_cluster <- cutree(NWSHC,k=3)
+names <- names(NWS_cluster)
+#
+PCA.genoGroups <- fviz_pca_ind(res.pca, label="none", habillage=NWS_cluster,
+                  addEllipses=TRUE, ellipse.level=0.75, palette = wes_palette("Darjeeling1"))
+#pdf("PCA_individuals_locations.pdf", height = 12, width = 12)
+PCA.plot
+#dev.off()
+
+#pdf("PCA_genoGroups.pdf", height = 12, width = 12)
+PCA.genoGroups
+#dev.off()
+```
+When adding an extra cluster, a clear differentiation between reference genomes from Norway and majority of our samples is occurring. 
+Twenty four of our 75 samples are within the Norwegian population cluster (Cluster 1, red).
+Lets continue with the Norwegian population, since the population structure is known and there is a clear distinguishing between northern and southern population. 
+
+
+```{r make a tree functions}
+dendro_data_k <- function(hc, k) {
+  
+  hcdata    <-  ggdendro::dendro_data(hc, type = "rectangle")
+  seg       <-  hcdata$segments
+  labclust  <-  cutree(hc, k)[hc$order]
+  segclust  <-  rep(0L, nrow(seg))
+  heights   <-  sort(hc$height, decreasing = TRUE)
+  height    <-  mean(c(heights[k], heights[k - 1L]), na.rm = TRUE)
+  
+  for (i in 1:k) {
+    xi      <-  hcdata$labels$x[labclust == i]
+    idx1    <-  seg$x    >= min(xi) & seg$x    <= max(xi)
+    idx2    <-  seg$xend >= min(xi) & seg$xend <= max(xi)
+    idx3    <-  seg$yend < height
+    idx     <-  idx1 & idx2 & idx3
+    segclust[idx] <- i
+  }
+  
+  idx                    <-  which(segclust == 0L)
+  segclust[idx]          <-  segclust[idx + 1L]
+  hcdata$segments$clust  <-  segclust
+  hcdata$segments$line   <-  as.integer(segclust < 1L)
+  hcdata$labels$clust    <-  labclust
+  
+  hcdata
+}
+
+
+set_labels_params <- function(nbLabels,
+                              direction = c("tb", "bt", "lr", "rl"),
+                              fan       = FALSE) {
+  if (fan) {
+    angle       <-  360 / nbLabels * 1:nbLabels + 90
+    idx         <-  angle >= 90 & angle <= 270
+    angle[idx]  <-  angle[idx] + 180
+    hjust       <-  rep(0, nbLabels)
+    hjust[idx]  <-  1
+  } else {
+    angle       <-  rep(0, nbLabels)
+    hjust       <-  0
+    if (direction %in% c("tb", "bt")) { angle <- angle + 45 }
+    if (direction %in% c("tb", "rl")) { hjust <- 1 }
+  }
+  list(angle = angle, hjust = hjust, vjust = 0.5)
+}
+plot_ggdendro <- function(hcdata,
+                          direction   = c("lr", "rl", "tb", "bt"),
+                          fan         = FALSE,
+                          scale.color = NULL,
+                          branch.size = 1,
+                          label.size  = 3,
+                          nudge.label = 0.01,
+                          expand.y    = 0.1) {
+  
+  direction <- match.arg(direction) # if fan = FALSE
+  ybreaks   <- pretty(segment(hcdata)$y, n = 5)
+  ymax      <- max(segment(hcdata)$y)
+  
+  ## branches
+  p <- ggplot() +
+    geom_segment(data         =  segment(hcdata),
+                 aes(x        =  x,
+                     y        =  y,
+                     xend     =  xend,
+                     yend     =  yend,
+                     linetype =  factor(line),
+                     colour   =  factor(clust)),
+                 lineend      =  "round",
+                 show.legend  =  FALSE,
+                 size         =  branch.size)
+  
+  ## orientation
+  if (fan) {
+    p <- p +
+      coord_polar(direction = -1) +
+      scale_x_continuous(breaks = NULL,
+                         limits = c(0, nrow(label(hcdata)))) +
+      scale_y_reverse(breaks = ybreaks)
+  } else {
+    p <- p + scale_x_continuous(breaks = NULL)
+    if (direction %in% c("rl", "lr")) {
+      p <- p + coord_flip()
+    }
+    if (direction %in% c("bt", "lr")) {
+      p <- p + scale_y_reverse(breaks = ybreaks)
+    } else {
+      p <- p + scale_y_continuous(breaks = ybreaks)
+      nudge.label <- -(nudge.label)
+    }
+  }
+  
+  # labels
+  labelParams <- set_labels_params(nrow(hcdata$labels), direction, fan)
+  hcdata$labels$angle <- labelParams$angle
+  
+  p <- p +
+    geom_text(data        =  label(hcdata),
+              aes(x       =  x,
+                  y       =  y,
+                  label   =  label,
+                  colour  =  factor(clust),
+                  angle   =  angle),
+              vjust       =  labelParams$vjust,
+              hjust       =  labelParams$hjust,
+              nudge_y     =  ymax * nudge.label,
+              size        =  label.size,
+              show.legend =  FALSE)
+  
+  # colors and limits
+  if (!is.null(scale.color)) {
+    p <- p + scale_color_manual(values = scale.color)
+  }
+  
+  ylim <- -round(ymax * expand.y, 1)
+  p    <- p + expand_limits(y = ylim)
+  
+  p
+}
+```
+```{r make a tree}
+NWSHC <- hclust(dist(d,method = "maximum"),method = "ward.D2")
+hcdata <- dendro_data_k(NWSHC, 5)
+cols <- get_palette("grey", 5)
+cols <- c("black",cols)
+p <- plot_ggdendro(hcdata,
+                   fan         = FALSE,
+                   scale.color = cols,
+                   label.size  = 4,
+                   nudge.label = 0.15,
+                   expand.y    = 0.08)
+p_all <- p + theme_void()
+
+Clusters_for_PAN <- cbind(hcdata$labels,md[match(hcdata$labels$label,rownames(md)),])
+Clusters_for_PAN <- Clusters_for_PAN[Clusters_for_PAN$Data =="Rasmussen",]
+Clusters_for_PAN <- Clusters_for_PAN[,c(3,4,6)]
+
+#write_csv(Clusters_for_PAN, file = "Host_Clusters.csv")
+  
+### Subset only cluster will data of known origin, since two clusters are outlying
+names.sub <- hcdata$labels$label[hcdata$labels$clust==1]
+d.sub <- d[names.sub,names.sub]
+
+NWSHC.sub <- hclust(dist(d.sub),method = "ward.D2")
+hcdata.sub <- dendro_data_k(NWSHC.sub, 3)
+cols <- get_palette("aaas", 5)
+p <- plot_ggdendro(hcdata.sub,
+                   fan         = FALSE,
+                   scale.color = cols,
+                   label.size  = 4,
+                   nudge.label = 0.15,
+                   expand.y    = 0.08)
+p <- p + theme_void()
+p_sub = p + geom_point(data     = md, 
+               aes(x    = match(rownames(md), hcdata.sub$labels$label),
+                   y    = -0.2,
+                   fill = as.factor(Region)),
+               size     = 3,
+               shape    = 21,
+               show.legend = TRUE) +
+  scale_fill_brewer(palette = "Dark2")
+```
+Okay, so the recovered population structure of Cluster 1 (the norwegian population), seems valid and comparable with Bertolotti et al and Wennevik et al.
+https://www.nature.com/articles/s41467-020-18972-x/figures/1
+https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.5258
+
+```{r NWSHC plotting}
+#pdf("NWSHC_max_wardD2_50p_Region.pdf", height = 32, width = 20)
+cowplot::plot_grid(p_all,p_sub, ncol = 1)
+#dev.off()
+```
+
+```{r Cluster 1 - Norwegian Population Structure and clustering}
+Clusters <- paste("Cluster",NWS_cluster)
+cluster_data <- data.frame(names,Clusters)
+
+CL1 <- cluster_data[cluster_data$Clusters == "Cluster 1",]
+CL1.df <- d[match(CL1$names, rownames(d)),]
+CL1.df <- t(CL1.df)
+CL1.df <- CL1.df[match(CL1$names, rownames(CL1.df)),]
+
+
+CL1.pca <- prcomp(CL1.df)
+CL1.data <- CL1.pca[["x"]][,1:2]
+CL1.md <- md[match(CL1$names, md$Sample),]
+CL1.data <- cbind(CL1.data,CL1,CL1.md)
+
+
+ggplot(data = CL1.data, aes(x = PC1, y = PC2, color = Region, label = Sample)) + 
+  geom_point() + 
+  geom_text() + 
+  theme_minimal() + scale_fill_brewer(palette = "Dark2") +
+  scale_color_brewer(palette = "Dark2")
+
+# Get clusters for PCA
+CL1.HC <- hclust(dist(CL1.df),method = "ward.D2")
+#
+CL1_subcluster <- cutree(CL1.HC,k=4)
+CL1.data$Sub_Cluster <- paste("Cluster",CL1_subcluster)
+
+# Remove outliers
+CL1.data <- CL1.data[CL1.data$Sample != "D30",]
+CL1.data <- CL1.data[CL1.data$Sample != "D46",]
+
+percent_variance_pca <-summary(CL1.pca)$importance["Proportion of Variance",] * 100
+
+pdf("Host_genotype_CL1.pdf", width = 10, height = 8)
+ggplot(data = CL1.data, aes(x = PC1, y = PC2, color = Sub_Cluster, label = ifelse(CL1.data$Data == "Rasmussen",CL1.data$Sample,""))) + 
+  geom_point() + 
+  geom_text(color = "black") + 
+  theme_minimal() + scale_fill_manual(values = c("#2b946c","#ff0000","#095e73")) +
+  scale_color_manual(values = c("#ff0000","#2b946c","#095e73")) + 
+  xlab(paste("PC1 (", percent_variance_pca[1],"%)", sep = "")) +
+  ylab(paste("PC2 (", percent_variance_pca[2],"%)", sep = ""))
+dev.off()
+
+```
+Get data for comparison of High abundant Mycoplasma in salmon
+```{r}
+NWS.CL1.data <- CL1.data[CL1.data$Data == "Rasmussen",]
+write.csv(NWS.CL1.data,"NWS_CL1_data.csv")
+```
+
+
+```{r load pop data from all for Admixture}
+pop<-read.table("sample_info.txt",as.is=T)
+Clusters <- paste("Cluster",NWS_cluster)
+PC_data <- PCs[match(pop$V1, PCs$Sample),]
+cluster_data <- data.frame(names,Clusters)
+cluster_data <- cluster_data[match(pop$V1, cluster_data$names),]
+new_pop_data <- data.frame("ID" = cluster_data$names, "PC_Cluster" = cluster_data$Clusters, "PC1" = PC_data$PC1, "PC2" = PC_data$PC2 )
+write_csv(new_pop_data, file = "Host_Clusters.csv")
+```
+Here we found around approximately \textbf(5 clusters).
+
+We estimated the admixture proportions to investigate gene-flow between the five clusters.
+See: http://www.popgen.dk/angsd/index.php/NGSadmix
+```{r Admixture}
+pop[3] <- new_pop_data$PC_Cluster
+pop[4] <- new_pop_data$PC1
+q<-read.table("Admix/NWS.K2.rep1.qopt")
+rownames(q) <- pop[,1]
+# order according to population and plot the NGSadmix reults
+ord<-orderInds(pop = as.vector(pop[,3]), q = q)
+
+#ord <- as.numeric(rownames(pop[order(pop[,4]),])) # if sorting by PC values instead of pam clusters
+
+df <- t(q)[,ord]
+
+
+
+q_melt <- melt(df)
+PCA.cluster <- pop[ord,3]
+q_melt$Cluster <- rep(PCA.cluster,each=2)
+ADMIX_plot <- ggplot(q_melt, aes(x=Var2, y=value, fill = Var1)) + geom_bar(stat= 'identity', width =1) + 
+  scale_fill_manual(values = wes_palette("Rushmore1")[4:5]) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = -0.09, size = 6, color = 'black')) + 
+  scale_y_continuous(expand = c(0,0))+ theme(legend.position = "none") +
+  facet_wrap(~Cluster, scales = "free", nrow = 1) + 
+  xlab("") + ylab("Admixture")
+
+sample_order <- unique(q_melt$Var2)
+
+
+pop$V1 <- factor(pop$V1, levels=sample_order)
+colnames(pop) <- c("Samples", "Location", "Cluster", "PC1")
+
+Loc_legend <- ggplot(pop, aes(x=Samples, y=1, fill = Location)) +
+  geom_bar(stat= 'identity', width =1) +
+  scale_fill_brewer(palette = "Dark2") +
+  facet_wrap(~Cluster, scales = "free", nrow = 1) + 
+  xlab("") + 
+  theme(legend.position = "none") + theme(strip.text.x = element_blank() , 
+  strip.background = element_blank(),
+  plot.margin = unit( c(0,0,0,0), units = "lines")) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+Legend <- ggplot(pop, aes(x=Samples, y=1, fill = Location)) +
+  geom_bar(stat= 'identity', width =1) +
+  scale_fill_brewer(palette = "Dark2") +
+  facet_wrap(~Cluster, scales = "free", nrow = 1) + 
+  xlab("")
+Legend <- cowplot::get_legend(Legend)
+
+ADMIX_plot <- plot_grid(ADMIX_plot,Loc_legend, ncol = 1, rel_heights = c(15,1))
+ADMIX_plot <- plot_grid(ADMIX_plot, Legend, nrow = 1, rel_widths =  c(5,1))
+ADMIX_plot
+```
+
+We used EValAdmix from ANGSD developers to evaluate the results of an admixture analysis. 
+The output is a pairwise correlation of residuals matrix between individuals. The correlation will be close to 0 in case of a good fit of the data to the admixture model. When individuals do not fit the model, individuals with similar demographic histories (i.e. usually individuals from the same population) will be positively correlated; and individuals with different histories but that are modelled as sharing one or more ancestral populations as admixture sources will have a negative correlation. Positive correlation between a pair of individuals might also be due to relatedness.
+
+For more information, please have a look at: http://www.popgen.dk/software/index.php/EvalAdmix 

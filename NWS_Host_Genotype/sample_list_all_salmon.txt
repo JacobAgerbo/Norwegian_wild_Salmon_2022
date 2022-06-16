@@ -1,0 +1,204 @@
+Sample	Location	Latitude	Longditude	Region	Data
+Alta_12_0038	Alta	69.968	23.375	North	Bertolotti
+Alta_12_0111	Alta	69.968	23.375	North	Bertolotti
+Alta_12_0135	Alta	69.968	23.375	North	Bertolotti
+Arga_12_0015	Aargaardsvassdraget	64.312	11.223	South	Bertolotti
+Arga_12_0121	Aargaardsvassdraget	64.312	11.223	South	Bertolotti
+Arga_15_0031	Aargaardsvassdraget	64.312	11.223	South	Bertolotti
+Arga_15_0201	Aargaardsvassdraget	64.312	11.223	South	Bertolotti
+Aroy_12_0084	Aaroey	61.268	7.1671	South	Bertolotti
+Aroy_15_0180	Aaroey	61.268	7.1671	South	Bertolotti
+Aroy_15_0182	Aaroey	61.268	7.1671	South	Bertolotti
+Beia_12_0009	Beiarvassdraget 	67.028	14.579	South	Bertolotti
+Beia_12_0281	Beiarvassdraget 	67.028	14.579	South	Bertolotti
+Bors_11_0008	Brselva_i_Porsanger	70.312	25.539	North	Bertolotti
+Dale_12_0065	Daleelva_(Hoeyanger)	61.219	6.0748	South	Bertolotti
+Driv_12_0056	Driva	62.676064	8.550612	South	Bertolotti
+Driv_12_0089	Driva	62.676064	8.550612	South	Bertolotti
+Driv_12_0100	Driva	62.676064	8.550612	South	Bertolotti
+Eidf_12_0071	Eidfjordvassdraget	60.466	7.0718	South	Bertolotti
+Eira_14_48075	Eira	62.678	8.1196	South	Bertolotti
+Eira_14_48117	Eira	62.678	8.1196	South	Bertolotti
+Eira_14_48228	Eira	62.678	8.1196	South	Bertolotti
+Elve_12_0011	Elvegaardselva_(Bjerkvik)	68.546	17.562	South	Bertolotti
+Enni_12_0008	Enningdalselva	58.981	11.474	South	Bertolotti
+Enni_12_0051	Enningdalselva	58.981	11.474	South	Bertolotti
+Flam-15_0008	Flaamselva	60.8651	7.1186	South	Bertolotti
+Flek_11_0132	Flekkeelva	61.31	5.3445	South	Bertolotti
+Flek_11_0244	Flekkeelva	61.31	5.3445	South	Bertolotti
+Fors_12_0038	Forsaavassdraget	68.151	16.116	South	Bertolotti
+GauST_13_0058	Gaula_i_Soer-Troendelag	63.341	10.236	South	Bertolotti
+GauST_13_0075	Gaula_i_Soer-Troendelag	63.341	10.236	South	Bertolotti
+GauST_14_6099	Gaula_i_Soer-Troendelag	63.341	10.236	South	Bertolotti
+Glop_11_0001	Gloppenelva	61.768	6.2	South	Bertolotti
+Glop_11_0216	Gloppenelva	61.768	6.2	South	Bertolotti
+Homl_12_0001	Homla	63.413	10.804	South	Bertolotti
+Homl_12_0002	Homla	63.413	10.804	South	Bertolotti
+Homl_12_0003	Homla	63.413	10.804	South	Bertolotti
+Jols_15_0663	Joelstra	61.455	5.8434	South	Bertolotti
+Jols_15_36274	Joelstra	61.455	5.8434	South	Bertolotti
+Jols_15_36277	Joelstra	61.455	5.8434	South	Bertolotti
+Keret_A12	Keret	66.021367	32.787895	White sea	Bertolotti
+Keret_B12	Keret	66.021367	32.787895	White sea	Bertolotti
+Keret_H11	Keret	66.021367	32.787895	White sea	Bertolotti
+Koma_06_0007	Komagelva	70.242	30.522	North	Bertolotti
+Koma_06_0009	Komagelva	70.242	30.522	North	Bertolotti
+Koma_06_0010	Komagelva	70.242	30.522	North	Bertolotti
+Laer_07_0016	Laerdalselva	61.102	7.4725	South	Bertolotti
+Lakj_03_0009	Tana-Laksjohka	70.059	27.562	North	Bertolotti
+Lakj_10_0318	Tana-Laksjohka	70.059	27.562	North	Bertolotti
+Laks_12_0006	Lakselva_i_Porsanger	70.078	24.927	North	Bertolotti
+Laks_12_0106	Lakselva_i_Porsanger	70.078	24.927	North	Bertolotti
+LanG_12_0012	Langfjordvassdraget	70.669135	27.839054	North	Bertolotti
+LanG_12_0025	Langfjordvassdraget	70.669135	27.839054	North	Bertolotti
+LanG_12_0028	Langfjordvassdraget	70.669135	27.839054	North	Bertolotti
+Lauk_13_0013	Laukhellevassdraget_(Lakselva_fra_Trollbuvatnet)	69.227	17.849	North	Bertolotti
+Lauk_13_0016	Laukhellevassdraget_(Lakselva_fra_Trollbuvatnet)	69.227	17.849	North	Bertolotti
+Lauk_13_0017	Laukhellevassdraget_(Lakselva_fra_Trollbuvatnet)	69.227	17.849	North	Bertolotti
+Lone_12_0023	Loneelva_i_Osteroey	60.52	5.5011	South	Bertolotti
+Mals_11_0025	Maalselvvassdraget	69.264	18.51	North	Bertolotti
+Mals_12_0020	Maalselvvassdraget	69.264	18.51	North	Bertolotti
+Mals_12_0022	Maalselvvassdraget	69.264	18.51	North	Bertolotti
+Mask_06_0199	Tana-Maskejohka	70.285	28.163	North	Bertolotti
+Mask_06_0200	Tana-Maskejohka	70.285	28.163	North	Bertolotti
+Nams_12_0049	Namsen_(hele_vassdraget)	64.464	11.682	South	Bertolotti
+Nams_12_0267	Namsen_(hele_vassdraget)	64.464	11.682	South	Bertolotti
+Nams_15_405	Namsen_(hele_vassdraget)	64.464	11.682	South	Bertolotti
+Nams_15_494	Namsen_(hele_vassdraget)	64.464	11.682	South	Bertolotti
+Naus_12_0016	Nausta	61.506	5.7197	South	Bertolotti
+Naus_12_0038	Nausta	61.506	5.7197	South	Bertolotti
+Naus_12_0041	Nausta	61.506	5.7197	South	Bertolotti
+Neid_13_1181	Neiden	69.701425	29.525231	North	Bertolotti
+Neid_13_2888	Neiden	69.701425	29.525231	North	Bertolotti
+Neid_13_2899	Neiden	69.701425	29.525231	North	Bertolotti
+Nume_12_0015	Numedalslaagen	59.06	10.071	South	Bertolotti
+Nume_12_0043	Numedalslaagen	59.06	10.071	South	Bertolotti
+Nume_12_0051	Numedalslaagen	59.06	10.071	South	Bertolotti
+Orkl_12_0804	Orkla	63.306627	9.82683	South	Bertolotti
+Orkl_12_0885	Orkla	63.306627	9.82683	South	Bertolotti
+Orkl_12_0899	Orkla	63.306627	9.82683	South	Bertolotti
+Osel_11_0055	Oselva_i_Os	60.186	5.4723	South	Bertolotti
+Osen_10_0003	Oselvvassdraget_(Osen)	61.550626	5.413458	South	Bertolotti
+Osen_10_0015	Oselvvassdraget_(Osen)	61.550626	5.413458	South	Bertolotti
+Osen_10_0017	Oselvvassdraget_(Osen)	61.550626	5.413458	South	Bertolotti
+Reip_11_0010	Reipaaga	66.908	13.632	South	Bertolotti
+Reip_11_0011	Reipaaga	66.908	13.632	South	Bertolotti
+Reip_11_0012	Reipaaga	66.908	13.632	South	Bertolotti
+Repp_12_0010	Repparfjordelva	70.445	24.328	North	Bertolotti
+Repp_12_0011	Repparfjordelva	70.445	24.328	North	Bertolotti
+Repp_12_0019	Repparfjordelva	70.445	24.328	North	Bertolotti
+Risf_11_0006	Risfjordvassdraget	70.978	28.171	North	Bertolotti
+Risf_11_0011	Risfjordvassdraget	70.978	28.171	North	Bertolotti
+Risf_11_0015	Risfjordvassdraget	70.978	28.171	North	Bertolotti
+Roks_12_0111	Roksdalsvassdraget	69.05	15.869	North	Bertolotti
+Roks_12_0113	Roksdalsvassdraget	69.05	15.869	North	Bertolotti
+Rygg_12_0002	Ryggelva	61.779	6.1249	South	Bertolotti
+Rygg_12_0008	Ryggelva	61.779	6.1249	South	Bertolotti
+Rygg_12_0010	Ryggelva	61.779	6.1249	South	Bertolotti
+Salt_12_0036	Saltdalsvassdraget	67.098	15.419	South	Bertolotti
+Salt_12_0039	Saltdalsvassdraget	67.098	15.419	South	Bertolotti
+Salt_12_0041	Saltdalsvassdraget	67.098	15.419	South	Bertolotti
+Sand_12_0004	Sandfjordelva_i_Gamvik	71.049	28.057	North	Bertolotti
+Sand_12_0006	Sandfjordelva_i_Gamvik	71.049	28.057	North	Bertolotti
+Sand_12_0038	Sandfjordelva_i_Gamvik	71.049	28.057	North	Bertolotti
+Skie_12_0091	Skienselva	59.135	9.6301	South	Bertolotti
+Skip_12_0014	Skipsfjordvassdraget	70.158	19.797	North	Bertolotti
+Skip_12_0027	Skipsfjordvassdraget	70.158	19.797	North	Bertolotti
+SS_08_MSW_003_D11	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_007_E11	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_008_F11	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_015_B12	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_016_C12	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_019_E12	Tornio	65.84811	24.14662	Baltic	Bertolotti
+SS_08_MSW_023_F12	Tornio	65.84811	24.14662	Baltic	Bertolotti
+Suld_11_0118	Suldalslaagen	59.48	6.2506	South	Bertolotti
+Suld_11_0270	Suldalslaagen	59.48	6.2506	South	Bertolotti
+Suld_11_0303	Suldalslaagen	62.971	8.6624	South	Bertolotti
+Surn_13_0028	Surna	62.971	8.6624	South	Bertolotti
+Surn_13_0280	Surna	62.838	7.2096	South	Bertolotti
+Sylt_12_0055	Sylteelva_i_Fraena	62.838	7.2096	South	Bertolotti
+Sylt_12_0103	Sylteelva_i_Fraena	69.909	27.0285	North	Bertolotti
+Vigd_09_0001	Vigda	63.312	10.182	South	Bertolotti
+Vigd_09_0004	Vigda	63.312	10.182	South	Bertolotti
+Vigd_09_0006	Vigda	63.312	10.182	South	Bertolotti
+Vike_12_0013	Vikedalselva_i_Vindafjord	59.496	5.8972	South	Bertolotti
+Vike_12_0014	Vikedalselva_i_Vindafjord	59.496	5.8972	South	Bertolotti
+Vike_13_0016	Vikedalselva_i_Vindafjord	59.496	5.8972	South	Bertolotti
+Vorm_11_0035	Vorma	59.271	6.3322	South	Bertolotti
+Vorm_11_0039	Vorma	59.271	6.3322	South	Bertolotti
+D100	Moenes/Tosken			Unknown	Rasmussen
+D109	Bugoeynes			Unknown	Rasmussen
+D10	Alta			Unknown	Rasmussen
+D110	Bugoeynes			Unknown	Rasmussen
+D111	Bugoeynes			Unknown	Rasmussen
+D112	Bugoeynes			Unknown	Rasmussen
+D113	Bugoeynes			Unknown	Rasmussen
+D114	Bugoeynes			Unknown	Rasmussen
+D11	Moenes/Tosken			Unknown	Rasmussen
+D12	Andoeya			Unknown	Rasmussen
+D13	Moenes/Tosken			Unknown	Rasmussen
+D14	Nordkapp			Unknown	Rasmussen
+D15	Nordkapp			Unknown	Rasmussen
+D16	Moenes/Tosken			Unknown	Rasmussen
+D17	Andoeya			Unknown	Rasmussen
+D18	Bugoeynes			Unknown	Rasmussen
+D20	Nordkapp			Unknown	Rasmussen
+D21	Andoeya			Unknown	Rasmussen
+D22	Nordkapp			Unknown	Rasmussen
+D23	Moenes/Tosken			Unknown	Rasmussen
+D24	Nordkapp			Unknown	Rasmussen
+D26	Andoeya			Unknown	Rasmussen
+D27	Nordkapp			Unknown	Rasmussen
+D2	Andoeya			Unknown	Rasmussen
+D30	Andoeya			Unknown	Rasmussen
+D31	Bugoeynes			Unknown	Rasmussen
+D32	Alta			Unknown	Rasmussen
+D33	Moenes/Tosken			Unknown	Rasmussen
+D34	Alta			Unknown	Rasmussen
+D35	Bugoeynes			Unknown	Rasmussen
+D36	Andoeya			Unknown	Rasmussen
+D37	Nordkapp			Unknown	Rasmussen
+D3	Andoeya			Unknown	Rasmussen
+D40	Bugoeynes			Unknown	Rasmussen
+D42	Andoeya			Unknown	Rasmussen
+D44	Nordkapp			Unknown	Rasmussen
+D45	Alta			Unknown	Rasmussen
+D46	Andoeya			Unknown	Rasmussen
+D47	Bugoeynes			Unknown	Rasmussen
+D4	Nordkapp			Unknown	Rasmussen
+D51	Nordkapp			Unknown	Rasmussen
+D53	Nordkapp			Unknown	Rasmussen
+D54	Andoeya			Unknown	Rasmussen
+D55	Nordkapp			Unknown	Rasmussen
+D60	Andoeya			Unknown	Rasmussen
+D64	Andoeya			Unknown	Rasmussen
+D65	Alta			Unknown	Rasmussen
+D69	Andoeya			Unknown	Rasmussen
+D70	Andoeya			Unknown	Rasmussen
+D71	Alta			Unknown	Rasmussen
+D73	Moenes/Tosken			Unknown	Rasmussen
+D75	Bugoeynes			Unknown	Rasmussen
+D77	Bugoeynes			Unknown	Rasmussen
+D79	Moenes/Tosken			Unknown	Rasmussen
+D7	Moenes/Tosken			Unknown	Rasmussen
+D81	Bugoeynes			Unknown	Rasmussen
+D82	Bugoeynes			Unknown	Rasmussen
+D83	Alta			Unknown	Rasmussen
+D84	Bugoeynes			Unknown	Rasmussen
+D85	Alta			Unknown	Rasmussen
+D87	Alta			Unknown	Rasmussen
+D88	Moenes/Tosken			Unknown	Rasmussen
+D8	Andoeya			Unknown	Rasmussen
+D90	Alta			Unknown	Rasmussen
+D92	Moenes/Tosken			Unknown	Rasmussen
+D93	Alta			Unknown	Rasmussen
+D97	Bugoeynes			Unknown	Rasmussen
+D9	Nordkapp			Unknown	Rasmussen
+MG104	Bugoeynes			Unknown	Rasmussen
+MG38	Alta			Unknown	Rasmussen
+MG41	Nordkapp			Unknown	Rasmussen
+MG48	Nordkapp			Unknown	Rasmussen
+MG54	Andoeya			Unknown	Rasmussen
+MG59	Nordkapp			Unknown	Rasmussen
+MG98	Moenes/Tosken			Unknown	Rasmussen
+MG99	Bugoeynes			Unknown	Rasmussen
