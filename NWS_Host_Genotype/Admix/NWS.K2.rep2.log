@@ -1,0 +1,9 @@
+Input: lname=/home/projects/ku-cbd/data/jacras/3-NWS/08_Host_Genotype/ANGSD/Admix/all.beagle.gz nPop=2, fname=(null) qname=(null) outfiles=/home/projects/ku-cbd/data/jacras/3-NWS/08_Host_Genotype/ANGSD/Admix/NWS.K2.rep2
+Setup: seed=18106 nThreads=10 method=1
+Convergence: maxIter=2000 tol=0.000010 tolLike50=0.100000 dymBound=0
+Filters: misTol=0.050000 minMaf=0.050000 minLrt=0.000000 minInd=68
+Input file has dim: nsites=625 nind=76
+Input file has dim (AFTER filtering): nsites=625 nind=76
+	[ALL done] cpu-time used =  0.56 sec
+	[ALL done] walltime used =  0.00 sec
+best like=-28662.427913 after 92 iterations

@@ -1,0 +1,30 @@
+#!/bin/bash
+module load htslib/1.8 angsd/0.921 ngsadmix/32 xqsub
+for K in {2..6}; do for rep in {1..100}; do xqsub -V -d `pwd` -j oe -k oe -l walltime=2:00:00,nodes=1:ppn=40,mem=5gb -N ngsad.NWS.K$K.rep$rep -de NGSadmix -likes /home/projects/ku-cbd/data/jacras/3-NWS/08_Host_Genotype/ANGSD/Admix_V2/ForAdmix.beagle.gz -seed $RANDOM -outfiles /home/projects/ku-cbd/data/jacras/3-NWS/08_Host_Genotype/ANGSD/Admix_V2/NWS.K$K.rep$rep -K $K -minMaf 0.05 -minInd $((90*66/100)) -P 40; done; done 
+#
+
+
+
+
+
+
+
+
+#!/bin/bash
+module load htslib/1.8 angsd/0.921 ngsadmix/32 xqsub
+qsub -V -d `pwd` -j oe -k oe -l walltime=5:00:00:00,nodes=1:ppn=40,mem=10gb -N ngsad.NWS 
+
+
+
+cnt=0; for K in 6; do
+for rep in {1..50}; do
+let cnt=cnt+1;
+echo bash NGSadmix.sh $K $rep "&"; if [[ $((cnt%4)) == 0 ]]; then echo wait; fi; done; done  > run_admixture6.sh
+
+
+
+
+
+
+
+for i in $(seq 2 6); do grep "best" NWS.K$i.rep*.log | awk '{print $1, $2}' | sort -k2,2nr -t "=" | head -1 >> best_like_K2_6.txt; done

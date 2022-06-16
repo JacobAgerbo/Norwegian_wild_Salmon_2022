@@ -1,0 +1,10 @@
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D100_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D109_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D10_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D110_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D111_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D112_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D113_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D114_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D11_map2host.bam
+/home/projects/ku-cbd/data/jacras/3-NWS/03_MapToRef/misc/D12_map2host.bam
